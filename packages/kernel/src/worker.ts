@@ -443,15 +443,6 @@ ctx.postMessage({
 });
 
 const patchCognite = async (): Promise<void> => {
-  // const micropip = await pyodide.loadPackage("micropip") 
-  const requirements = ["pipdeptree", "pyodide-http", "requests", "cognite-sdk", "pandas", "matplotlib"]
-
-  await pyodide.loadPackage("micropip");
-  const micropip = pyodide.pyimport("micropip");
-  await micropip.install.callKwargs(requirements, {
-    keep_going: true,
-  });
-  
   // If token has been passed already, set token etc
   await pyodide.runPythonAsync(`
     import os
