@@ -1,5 +1,6 @@
 {
-    "hosting": {
+  "hosting": [
+    {
       "site": "cdf-stlite-prod",
       "public": "/tmp/website/",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
@@ -9,5 +10,5 @@
       "public": "/tmp/website/",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
     }
+  ]
 }
-  
