@@ -3,11 +3,7 @@ name: Build and Deploy Stlite
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches:
-      - '*'
-permissions:
-  checks: write
+
 jobs:
   build:
     strategy:
@@ -89,12 +85,7 @@ jobs:
 
   deploy:
     needs: build
-
     runs-on: ubuntu-latest
-
-    # Settings for GitHub pages deployment, ref: https://github.com/peaceiris/actions-gh-pages#getting-started
-    permissions:
-      contents: write
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
 
