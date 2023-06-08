@@ -64,11 +64,11 @@ jobs:
         cache: 'yarn'
 
     ## Set up apt packages. Ref: https://github.com/streamlit/streamlit/wiki/Contributing#ubuntu
-    - name: Install Streamlit build dependencies
-      run: sudo apt install protobuf-compiler
+    # - name: Install Streamlit build dependencies
+    #   run: sudo apt install protobuf-compiler
 
-    - name: Set up
-      run: make init
+    # - name: Set up
+    #   run: make init
 
     ## Build and deploy @stlite/mountable
     # PUBLIC_URL here is set as a relative path, which is possible to the trick introduced at https://github.com/whitphx/stlite/pull/143.
