@@ -1,12 +1,12 @@
 {
   "hosting": [
     {
-      "site": "cdf-stlite-prod",
+      "site": "cognite-stlite-standalone-production",
       "public": "/tmp/website/",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
     },
     {
-      "site": "cdf-stlite-staging",
+      "site": "cognite-stlite-standalone-staging",
       "public": "/tmp/website/",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
     }
