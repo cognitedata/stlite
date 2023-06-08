@@ -64,29 +64,23 @@ jobs:
         cache: 'yarn'
 
     ## Set up apt packages. Ref: https://github.com/streamlit/streamlit/wiki/Contributing#ubuntu
-    # - name: Install Streamlit build dependencies
-    #   run: sudo apt install protobuf-compiler
+    - name: Install Streamlit build dependencies
+      run: sudo apt install protobuf-compiler
 
-    # - name: Set up
-    #   run: make init
+    - name: Set up
+      run: make init
 
     ## Build and deploy @stlite/mountable
     # PUBLIC_URL here is set as a relative path, which is possible to the trick introduced at https://github.com/whitphx/stlite/pull/143.
-    # - if: matrix.target == 'mountable'
-    #   name: Set PUBLIC_URL
-    #   run: echo "PUBLIC_URL=." >> $GITHUB_ENV
-    # - if: matrix.target == 'mountable'
-    #   name: Build @stlite/mountable
-    #   run: make mountable
-    # - name: Set the build artifact paths
-    #   run: |
-    #     mv packages/mountable/build/asset-manifest.json packages/mountable/build/manifest.json
-    - name: mkdir
+    - if: matrix.target == 'mountable'
+      name: Set PUBLIC_URL
+      run: echo "PUBLIC_URL=." >> $GITHUB_ENV
+    - if: matrix.target == 'mountable'
+      name: Build @stlite/mountable
+      run: make mountable
+    - name: Set the build artifact paths
       run: |
-        mkdir -p packages/mountable/build
-    - name: copy html
-      run: |
-        cp index.html packages/mountable/build
+        mv packages/mountable/build/asset-manifest.json packages/mountable/build/manifest.json
     # Deploying to Firebase
     - uses: FirebaseExtended/action-hosting-deploy@v0
       with:
