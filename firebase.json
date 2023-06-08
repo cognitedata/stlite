@@ -2,12 +2,12 @@
   "hosting": [
     {
       "site": "cognite-stlite-standalone-production",
-      "public": "/tmp/website/",
+      "public": "packages/mountable/build/",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
     },
     {
       "site": "cognite-stlite-standalone-staging",
-      "public": "/tmp/website/",
+      "public": "packages/mountable/build/",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
     }
   ]

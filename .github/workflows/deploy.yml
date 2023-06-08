@@ -80,7 +80,7 @@ jobs:
       run: make mountable
     - name: Set the build artifact paths
       run: |
-        mkdir -p /tmp/website && cp -r packages/mountable/build/* /tmp/website/. && mv /tmp/website/asset-manifest.json /tmp/website/manifest.json
+        mv packages/mountable/build/asset-manifest.json packages/mountable/build/manifest.json
     # Deploying to Firebase
     - uses: FirebaseExtended/action-hosting-deploy@v0
       with:
