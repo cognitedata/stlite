@@ -65,6 +65,12 @@ async function loadPyodideAndPackages() {
   });
   console.debug("Loaded Pyodide");
 
+  await pyodide.runPythonAsync(`
+    import micropip
+    micropip.install("pyodide-http==0.2.1")
+  `);
+  console.debug("Loaded pyodide-http");
+
   console.debug("Patch Cognite");
   patchCognite();
 
@@ -111,8 +117,6 @@ async function loadPyodideAndPackages() {
     });
     await micropip.install.callKwargs([wheels.streamlit], { keep_going: true });
     console.debug("Loaded stlite-server, and streamlit");
-    await micropip.install.callKwargs(['pyodide-http==0.2.1'], { keep_going: true });
-    console.debug("Loaded pyodide-http");
 
     postProgressMessage("Mocking some packages.");
     console.debug("Mock pyarrow");
