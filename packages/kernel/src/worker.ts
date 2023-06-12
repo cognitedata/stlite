@@ -111,6 +111,8 @@ async function loadPyodideAndPackages() {
     });
     await micropip.install.callKwargs([wheels.streamlit], { keep_going: true });
     console.debug("Loaded stlite-server, and streamlit");
+    await micropip.install.callKwargs(['pyodide-http==0.2.1'], { keep_going: true });
+    console.debug("Loaded pyodide-http");
 
     postProgressMessage("Mocking some packages.");
     console.debug("Mock pyarrow");
@@ -451,5 +453,7 @@ const patchCognite = async (): Promise<void> => {
     os.environ["COGNITE_BASE_URL"] = "${baseUrl}"
     # Set flag to tell the SDK that we are inside of a Fusion Notebook:
     os.environ["COGNITE_FUSION_NOTEBOOK"] = "1"
+    from pyodide_http import patch_all
+    patch_all()
   `);
 };
