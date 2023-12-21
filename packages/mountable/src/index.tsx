@@ -85,19 +85,22 @@ export function mount(
   };
 }
 
-if (localStorageAvailable()) {
-  // Set light theme as default if not overriden by local store
-  const cachedThemeStr = window.localStorage.getItem(LocalStore.ACTIVE_THEME);
-  if (!cachedThemeStr) {
-    window.localStorage.setItem(
-      LocalStore.ACTIVE_THEME,
-      JSON.stringify({ name: "Light" })
-    );
+const setTheme = (theme: "Light" | "Dark") => {
+  if (!localStorageAvailable()) {
+    console.error("Tried to set theme, but localStorage is not available");
+    return;
   }
-}
+
+  const themeObj = { name: theme };
+  window.localStorage.setItem(
+    LocalStore.ACTIVE_THEME,
+    JSON.stringify(themeObj)
+  );
+};
 
 export interface AppData {
   entrypoint?: string;
+  theme?: "Light" | "Dark";
   files: {
     [key: string]: {
       content?:
@@ -156,6 +159,14 @@ window.addEventListener(
             }
           }
         }
+
+        if (app.theme) {
+          setTheme(app.theme);
+        } else {
+          // Default to light theme
+          setTheme("Light");
+        }
+
         mountedApp = mount(app, document.getElementById("root") as HTMLElement);
         prevApp = app;
       } else {
