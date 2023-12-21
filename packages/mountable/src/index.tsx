@@ -5,6 +5,10 @@ import { StliteKernel } from "@stlite/kernel";
 import { getParentUrl } from "./url";
 import { canonicalizeMountOptions, MountOptions } from "./options";
 import {
+  LocalStore,
+  localStorageAvailable,
+} from "streamlit-browser/src/lib/util/storageUtils";
+import {
   ToastContainer,
   makeToastKernelCallbacks,
   StliteKernelWithToast,
@@ -101,6 +105,17 @@ export interface AppData {
 
 let prevApp: AppData | null = null;
 let mountedApp: any = null;
+
+if (localStorageAvailable()) {
+  // Set light theme as default if not overriden by local store
+  const cachedThemeStr = window.localStorage.getItem(LocalStore.ACTIVE_THEME);
+  if (!cachedThemeStr) {
+    window.localStorage.setItem(
+      LocalStore.ACTIVE_THEME,
+      JSON.stringify({ name: "Light" })
+    );
+  }
+}
 
 window.addEventListener(
   "message",
