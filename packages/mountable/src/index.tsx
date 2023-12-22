@@ -148,7 +148,7 @@ window.addEventListener(
         }
 
         let mountableApp: SimplifiedStliteKernelOptions = app;
-        const theme = app.theme || "light";
+        const theme = app.theme || "Light";
         mountableApp.streamlitConfig = {
           "theme.base": theme.toLowerCase(),
         };
