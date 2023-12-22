@@ -9,10 +9,6 @@ import {
   SimplifiedStliteKernelOptions,
 } from "./options";
 import {
-  LocalStore,
-  localStorageAvailable,
-} from "streamlit-browser/src/lib/util/storageUtils";
-import {
   ToastContainer,
   makeToastKernelCallbacks,
   StliteKernelWithToast,
