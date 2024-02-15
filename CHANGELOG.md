@@ -7,6 +7,132 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.47.0] - 2024-02-11
+
+### `@stlite/kernel`
+
+#### Changed
+
+- Stop publishing `@stlite/kernel` to NPM, [#743](https://github.com/whitphx/stlite/pull/743).
+
+## [0.46.1] - 2024-02-11
+
+### `@stlite/kernel`
+
+#### Fixed
+
+- Restore the `pyodide-http` patch which was removed in 0.45.1, [#742](https://github.com/whitphx/stlite/pull/742) and [#738](https://github.com/whitphx/stlite/pull/738), which was released once as 0.45.3 but not effective.
+
+## [0.46.0] - 2024-02-11
+
+### `@stlite/desktop`
+
+#### Changed
+
+- Update Streamlit to 1.31.0, [#741](https://github.com/whitphx/stlite/pull/741)
+
+## [0.45.5] - 2024-02-11
+
+### `@stlite/desktop`
+
+#### Fixed
+
+- Ship the stlite wheels along with the `desktop` package instead of loading them fron the hosted `kernel` package, [#722](https://github.com/whitphx/stlite/pull/722).
+
+## [0.45.4] - 2024-02-11
+
+### `@stlite/common`
+
+#### Fixed
+
+- `requirements.txt` parser to ignore comments, [#739](https://github.com/whitphx/stlite/pull/739).
+
+## [0.45.3] - 2024-02-11
+
+### `@stlite/kernel`
+
+#### Fixed
+
+- Restore the `pyodide-http` patch which was removed in 0.45.1, [#738](https://github.com/whitphx/stlite/pull/738).
+
+## [0.45.2] - 2024-02-08
+
+### `@stlite/*`
+
+#### Fixed
+
+- Internal package updates.
+
+## [0.45.1] - 2024-02-07
+
+### `@stlite/kernel`
+
+#### Fixed
+
+- Remove the HTTP patch because [`urllib3` started to support Pyodide since 2.2.0](https://urllib3.readthedocs.io/en/stable/reference/contrib/emscripten.html), [#689](https://github.com/whitphx/stlite/pull/689).
+
+## [0.45.0] - 2024-01-20
+
+### `@stlite/kernel`
+
+#### Changed
+
+- Update Pyodide to 0.24.1, [#681](https://github.com/whitphx/stlite/pull/681).
+
+## [0.44.0] - 2024-01-20
+
+### `@stlite/kernel`
+
+#### Changed
+
+- Update Streamlit to 1.30.0, [#678](https://github.com/whitphx/stlite/pull/678)
+
+## [0.43.1] - 2024-01-19
+
+### `@stlite/kernel`
+
+#### Changed
+
+- Update Streamlit to 1.27.0, [#671](https://github.com/whitphx/stlite/pull/671)
+
+### `@stlite/mountable`
+
+#### Added
+
+- `disableProgressToasts` and `disableErrorToasts` options, [#671](https://github.com/whitphx/stlite/pull/671)
+
+#### Changed
+
+- Remove `ctx.disableToast()` and `ctx.enableToast()`, [#671](https://github.com/whitphx/stlite/pull/671)
+
+## [0.43.0]
+
+Skipped
+
+## [0.42.5] - 2024-01-19
+
+### `@stlite/kernel`
+
+#### Fixed
+
+- Install the user-specified requirements and the stlite custom wheels at the same time, [#676](https://github.com/whitphx/stlite/pull/676).
+
+## [0.42.4] - 2023-12-27
+
+### `@stlite/kernel`
+
+#### Fixed
+
+- Set the `altair` version to `<5.2.0` as a workaround to solve an error of [#662](https://github.com/whitphx/stlite/issues/662), [#668](https://github.com/whitphx/stlite/pull/668).
+- Install the user-specified requirements before the Streamlit package, [#664](https://github.com/whitphx/stlite/pull/664).
+- Fix `DEVELOPMENT.md`, [#665](https://github.com/whitphx/stlite/pull/665), by @andeplane.
+
+### `@stlite/desktop`
+
+#### Fixed
+
+- Fix the CSP for `st.camera_input()`, [#666](https://github.com/whitphx/stlite/pull/666).
+
 ## [0.42.3] - 2023-11-01
 
 ### `@stlite/kernel`

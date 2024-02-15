@@ -4,7 +4,7 @@ import StreamlitApp from "./StreamlitApp";
 import { StliteKernel } from "@stlite/kernel";
 import { getParentUrl } from "./url";
 import {
-  canonicalizeMountOptions,
+  parseMountOptions,
   MountOptions,
   SimplifiedStliteKernelOptions,
 } from "./options";
@@ -39,10 +39,11 @@ export function mount(
   options: MountOptions,
   container: HTMLElement = document.body
 ) {
+  const { kernelOptions, toastCallbackOptions } = parseMountOptions(options);
   const kernel = new StliteKernel({
-    ...canonicalizeMountOptions(options),
+    ...kernelOptions,
     wheelBaseUrl,
-    ...makeToastKernelCallbacks(),
+    ...makeToastKernelCallbacks(toastCallbackOptions),
   });
   ReactDOM.render(
     <React.StrictMode>
@@ -53,7 +54,6 @@ export function mount(
   );
 
   const kernelWithToast = new StliteKernelWithToast(kernel);
-  let currentKernel: StliteKernel | StliteKernelWithToast = kernelWithToast;
 
   return {
     unmount: () => {
@@ -61,26 +61,20 @@ export function mount(
       ReactDOM.unmountComponentAtNode(container);
     },
     install: (requirements: string[]) => {
-      return currentKernel.install(requirements);
+      return kernelWithToast.install(requirements);
     },
     writeFile: (
       path: string,
       data: string | ArrayBufferView,
       opts?: Record<string, any>
     ) => {
-      return currentKernel.writeFile(path, data, opts);
+      return kernelWithToast.writeFile(path, data, opts);
     },
     renameFile: (oldPath: string, newPath: string) => {
-      return currentKernel.renameFile(oldPath, newPath);
+      return kernelWithToast.renameFile(oldPath, newPath);
     },
     unlink: (path: string) => {
-      return currentKernel.unlink(path);
-    },
-    enableToast: (): void => {
-      currentKernel = kernelWithToast;
-    },
-    disableToast: (): void => {
-      currentKernel = kernel;
+      return kernelWithToast.unlink(path);
     },
   };
 }

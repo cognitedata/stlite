@@ -8,7 +8,7 @@ export type PyodideConvertiblePrimitive =
   | undefined; // Ref: https://pyodide.org/en/stable/usage/type-conversions.html#javascript-to-python
 
 export interface HttpRequest {
-  method: "GET" | "POST";
+  method: "GET" | "PUT" | "DELETE";
   path: string;
   headers: Record<string, string>;
   body: ArrayBuffer | string;
@@ -115,6 +115,8 @@ export interface InTokenMessage extends InMessageBase {
   data: {
     token: string;
     baseUrl: string;
+    fusionUrl: string;
+    organization: string;
     project: string;
     email?: string;
   };
