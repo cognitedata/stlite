@@ -35,6 +35,8 @@ import STLITE_LIB_WHEEL from "!!file-loader?name=pypi/[name].[ext]&context=.!../
 import STREAMLIT_WHEEL from "!!file-loader?name=pypi/[name].[ext]&context=.!../py/streamlit/lib/dist/streamlit-1.38.0-cp312-none-any.whl";
 // COGNITE: code completion
 import JEDI_WHEEL from "!!file-loader?name=pypi/[name].[ext]&context=.!../py/jedi/jedi-0.19.1-py2.py3-none-any.whl";
+import PANDASAI_WHEEL from "!!file-loader?name=pypi/[name].[ext]&context=.!../py/pandasai/cognite_ai-0.4.7-py3-none-any.whl";
+import REGEX_WHEEL from "!!file-loader?name=pypi/[name].[ext]&context=.!../py/pandasai/regex-2023.8.8-py3-none-any.whl";
 import { postMessageToFusion } from "./cognite/streamlit-worker-communication-utils";
 import {
   generateAppScreenshot,
@@ -126,7 +128,7 @@ export interface StliteKernelOptions {
 
   onModuleAutoLoad?: (
     packagesToLoad: string[],
-    installPromise: Promise<PackageData[]>
+    installPromise: Promise<PackageData[]>,
   ) => void;
 
   onProgress?: (message: string) => void;
@@ -193,24 +195,39 @@ export class StliteKernel {
         STLITE_LIB_WHEEL,
         STREAMLIT_WHEEL,
         JEDI_WHEEL,
+        PANDASAI_WHEEL,
       });
       const stliteLibWheelUrl = makeAbsoluteWheelURL(
         STLITE_LIB_WHEEL as unknown as string,
-        options.wheelBaseUrl
+        options.wheelBaseUrl,
       );
       const streamlitWheelUrl = makeAbsoluteWheelURL(
         STREAMLIT_WHEEL as unknown as string,
-        options.wheelBaseUrl
+        options.wheelBaseUrl,
       );
       // COGNITE: needed for language server
       const jediWheelUrl = makeAbsoluteWheelURL(
         JEDI_WHEEL as unknown as string,
-        options.wheelBaseUrl
+        options.wheelBaseUrl,
+      );
+      // COGNITE: needed for integrating pandas-ai and additional ai features
+      const pandasaiWheelUrl = makeAbsoluteWheelURL(
+        PANDASAI_WHEEL as unknown as string,
+        options.wheelBaseUrl,
+      );
+      const regexWheelUrl = makeAbsoluteWheelURL(
+        REGEX_WHEEL as unknown as string,
+        options.wheelBaseUrl,
       );
       wheels = {
         stliteLib: stliteLibWheelUrl,
         streamlit: streamlitWheelUrl,
         jedi: jediWheelUrl,
+        regex: regexWheelUrl,
+        pandasai: pandasaiWheelUrl,
+        "cognite.ai": pandasaiWheelUrl,
+        "cognite-ai": pandasaiWheelUrl,
+        cognite_ai: pandasaiWheelUrl,
       };
       console.debug("Custom wheel resolved URLs:", wheels);
     }
@@ -271,7 +288,7 @@ export class StliteKernel {
           request,
         },
       },
-      "http:response"
+      "http:response",
     ).then((data) => {
       return {
         ...data.response,
@@ -283,7 +300,7 @@ export class StliteKernel {
   public writeFile(
     path: string,
     data: string | ArrayBufferView,
-    opts?: Record<string, unknown>
+    opts?: Record<string, unknown>,
   ): Promise<void> {
     return this._asyncPostMessage({
       type: "file:write",
@@ -338,15 +355,15 @@ export class StliteKernel {
   }
 
   private _asyncPostMessage(
-    message: InMessage
+    message: InMessage,
   ): Promise<ReplyMessageGeneralReply["data"]>;
   private _asyncPostMessage<T extends ReplyMessage["type"]>(
     message: InMessage,
-    expectedReplyType: T
+    expectedReplyType: T,
   ): Promise<Extract<ReplyMessage, { type: T }>["data"]>;
   private _asyncPostMessage(
     message: InMessage,
-    expectedReplyType = "reply"
+    expectedReplyType = "reply",
   ): Promise<ReplyMessage["data"]> {
     return new Promise((resolve, reject) => {
       const channel = new MessageChannel();
@@ -429,11 +446,12 @@ export class StliteKernel {
                 }
                 port.close();
               };
-            })
+            }),
           );
         break;
       }
       // COGNITE: needed for language server
+      case "pandas-ai:execute":
       case "language-server:hover":
       case "language-server:autocomplete": {
         postMessageToFusion(msg);
@@ -508,7 +526,7 @@ const initTokenStorageAndAuthHandler = (worker: StliteWorker) => {
         }
       }
     },
-    false
+    false,
   );
   // communicate if in iframe to parent (top)
   postMessageToFusion("getToken");
@@ -530,7 +548,7 @@ const sendTokenToWorker = (
     fusionUrl: string;
     email?: string;
   },
-  worker: StliteWorker
+  worker: StliteWorker,
 ) => {
   worker.postMessage({
     type: "newToken",
