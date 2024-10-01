@@ -19,6 +19,11 @@ import {
   importLanguageServerPythonLibraries,
 } from "./cognite/language-server-utils";
 import { LanguageServerEvents } from "./cognite/language-server-types";
+import {
+  handlePandasAiCode,
+  importPandasAILibraries,
+  PandasAiExecuteRequest,
+} from "./cognite/pandas-ai-utils";
 
 let tokenIsSet = false;
 
@@ -34,7 +39,7 @@ const self = global as typeof globalThis & {
 function dispatchModuleAutoLoading(
   pyodide: Pyodide.PyodideInterface,
   postMessage: PostMessageFn,
-  sources: string[]
+  sources: string[],
 ): void {
   const autoLoadPromise = tryModuleAutoLoad(pyodide, postMessage, sources);
   // `autoInstallPromise` will be awaited in the script_runner on the Python side.
@@ -50,7 +55,7 @@ script_runner.moduleAutoLoadPromise = __moduleAutoLoadPromise__
 export function startWorkerEnv(
   defaultPyodideUrl: string,
   postMessage: PostMessageFn,
-  presetInitialData?: Partial<WorkerInitialData>
+  presetInitialData?: Partial<WorkerInitialData>,
 ) {
   function postProgressMessage(message: string): void {
     postMessage({
@@ -105,6 +110,7 @@ export function startWorkerEnv(
     pyodide = await initPyodide(pyodideUrl, {
       stdout: console.log,
       stderr: console.error,
+      checkAPIVersion: false,
     });
     console.debug("Loaded Pyodide");
 
@@ -133,7 +139,7 @@ export function startWorkerEnv(
         pyodide.FS.mount(
           pyodide.FS.filesystems.NODEFS,
           { root: path },
-          mountpoint
+          mountpoint,
         );
       });
     }
@@ -162,7 +168,7 @@ export function startWorkerEnv(
         if (path.endsWith(".py")) {
           pythonFilePaths.push(path);
         }
-      })
+      }),
     );
 
     // Unpack archives
@@ -180,7 +186,7 @@ export function startWorkerEnv(
 
         console.debug(`Unpack an archive`, { format, options });
         pyodide.unpackArchive(buffer, format, options);
-      })
+      }),
     );
 
     await pyodide.loadPackage("micropip");
@@ -204,7 +210,7 @@ export function startWorkerEnv(
         "Installing the wheels:",
         wheels,
         "and the requirements:",
-        requirements
+        requirements,
       );
       // NOTE: It's important to install the user-specified requirements
       // and the custom Streamlit and stlite wheels in the same `micropip.install` call,
@@ -216,8 +222,17 @@ export function startWorkerEnv(
       // which avoids the problem of https://github.com/whitphx/stlite/issues/675
       // (installing the custom wheels must be earlier than or equal to installing the user-reqs).
       await micropip.install.callKwargs(
-        [wheels.stliteLib, wheels.streamlit, ...requirements],
-        { keep_going: true }
+        [
+          wheels.stliteLib,
+          wheels.streamlit,
+          wheels.regex,
+          wheels.pandasai,
+          wheels["cognite.ai"],
+          wheels["cognite-ai"],
+          wheels.cognite_ai,
+          ...requirements,
+        ],
+        { keep_going: true },
       );
       console.debug("Installed the wheels and the requirements");
     } else {
@@ -227,7 +242,7 @@ export function startWorkerEnv(
     }
     if (moduleAutoLoad) {
       const sources = pythonFilePaths.map((path) =>
-        pyodide.FS.readFile(path, { encoding: "utf8" })
+        pyodide.FS.readFile(path, { encoding: "utf8" }),
       );
       dispatchModuleAutoLoading(pyodide, postMessage, sources);
     }
@@ -331,7 +346,7 @@ def setup_loggers(streamlit_level, streamlit_message_format):
     console.debug("Set the loggers");
 
     postProgressMessage(
-      "Mocking some Streamlit functions for the browser environment."
+      "Mocking some Streamlit functions for the browser environment.",
     );
     console.debug("Mocking some Streamlit functions");
     // Disable caching. See https://github.com/whitphx/stlite/issues/495
@@ -347,6 +362,9 @@ streamlit.runtime.runtime.is_cacheable_msg = is_cacheable_msg
 
     postProgressMessage("Importing Language Server");
     await importLanguageServerPythonLibraries(pyodide, micropip);
+
+    postProgressMessage("Importing pandas");
+    await importPandasAILibraries(pyodide, micropip);
 
     if (useIdbfs) {
       postProgressMessage("Setting up the IndexedDB filesystem synchronizer.");
@@ -495,7 +513,7 @@ prepare(main_script_path, args)
                 const payload = new Uint8ClampedArray(
                   buffer.data.buffer,
                   buffer.data.byteOffset,
-                  buffer.data.byteLength
+                  buffer.data.byteLength,
                 );
                 postMessage({
                   type: "websocket:message",
@@ -512,7 +530,7 @@ prepare(main_script_path, args)
                   },
                 });
               }
-            }
+            },
           );
 
           messagePort.postMessage({
@@ -536,7 +554,7 @@ prepare(main_script_path, args)
           const onResponse = (
             statusCode: number,
             _headers: PyProxy,
-            _body: PyProxy
+            _body: PyProxy,
           ) => {
             const headers = new Map<string, string>(_headers.toJs()); // Pyodide converts dict to LiteralMap, not Map, which can't be cloned and sent to the main thread. So we convert it to Map here. Ref: https://github.com/pyodide/pyodide/pull/4576
             const body = _body.toJs();
@@ -560,7 +578,7 @@ prepare(main_script_path, args)
             decodeURIComponent(request.path),
             request.headers,
             request.body,
-            onResponse
+            onResponse,
           );
           break;
         }
@@ -657,7 +675,7 @@ prepare(main_script_path, args)
 
 async function handleCogniteMessage(
   pyodidePromise: Promise<Pyodide.PyodideInterface>,
-  msg: InMessage
+  msg: InMessage,
 ) {
   if (msg.type === "newToken") {
     const token = msg.data.token;
@@ -687,5 +705,9 @@ async function handleCogniteMessage(
   } else if (tokenIsSet && msg.type === LanguageServerEvents.hover) {
     const pyodide = await pyodidePromise;
     handleHover(postMessage, msg, pyodide);
+  } else if (tokenIsSet && msg.type === PandasAiExecuteRequest) {
+    const pyodide = await pyodidePromise;
+    console.log("Pandas AI Execute Request", msg);
+    handlePandasAiCode(postMessage, msg, pyodide);
   }
 }

@@ -57,6 +57,11 @@ export interface WorkerInitialData {
     stliteLib: string;
     streamlit: string;
     jedi: string;
+    regex: string;
+    pandasai: string;
+    "cognite.ai": string;
+    "cognite-ai": string;
+    cognite_ai: string;
   };
   streamlitConfig?: StreamlitConfig;
   idbfsMountpoints?: string[];
@@ -153,6 +158,14 @@ export interface InMessageHover extends InMessageBase {
   type: "language-server:hover";
   data: LanguageServerRequestPayload;
 }
+export interface InPandasAiExecuteCode extends InMessageBase {
+  type: "pandas-ai:execute";
+  data: {
+    code: string;
+    requirements: string[];
+    responseType: "json" | "markdown";
+  };
+}
 
 export type InMessage =
   | InMessageInitData
@@ -166,7 +179,8 @@ export type InMessage =
   | InMessageInstall
   | InTokenMessage
   | InMessageAutocomplete
-  | InMessageHover;
+  | InMessageHover
+  | InPandasAiExecuteCode;
 
 export interface StliteWorker extends Worker {
   postMessage(message: InMessage, transfer: Transferable[]): void;
@@ -210,6 +224,12 @@ export interface OutMessageModuleAutoLoadEvent extends OutMessageBase {
     packagesToLoad: string[];
   };
 }
+export interface OutMessagePandasAiCodeEvent extends OutMessageBase {
+  type: "pandas-ai:execute";
+  data: {
+    result: any;
+  };
+}
 export type OutMessage =
   | OutMessageStartEvent
   | OutMessageProgressEvent
@@ -218,7 +238,8 @@ export type OutMessage =
   | OutMessageWebSocketBack
   | OutMessageLangugeServerAutocomplete
   | OutMessageLangugeServerHover
-  | OutMessageModuleAutoLoadEvent;
+  | OutMessageModuleAutoLoadEvent
+  | OutMessagePandasAiCodeEvent;
 
 export interface ModuleAutoLoadMessageBase {
   type: string;
@@ -259,7 +280,7 @@ export type ReplyMessage = ReplyMessageHttpResponse | ReplyMessageGeneralReply;
  * Validators
  */
 export function isPyodideConvertiblePrimitive(
-  value: unknown
+  value: unknown,
 ): value is PyodideConvertiblePrimitive {
   return (
     typeof value === "string" ||
@@ -275,12 +296,12 @@ export function isStreamlitConfig(value: unknown): value is StreamlitConfig {
     value != null &&
     Object.entries(value).every(
       ([key, value]) =>
-        typeof key === "string" && isPyodideConvertiblePrimitive(value)
+        typeof key === "string" && isPyodideConvertiblePrimitive(value),
     )
   );
 }
 export function assertStreamlitConfig(
-  value: unknown
+  value: unknown,
 ): asserts value is StreamlitConfig {
   if (!isStreamlitConfig(value)) {
     throw new Error(`Invalid streamlitConfig: ${value}`);
