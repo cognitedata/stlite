@@ -699,7 +699,7 @@ prepare(main_script_path, args)
 }
 
 async function handleCogniteMessage(
-  pyodidePromise: Promise<Pyodide.PyodideInterface>,
+  pyodidePromise: Promise<PyodideInterface>,
   msg: InMessage,
 ) {
   if (msg.type === "newToken") {
