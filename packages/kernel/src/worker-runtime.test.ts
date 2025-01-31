@@ -1,15 +1,14 @@
 import path from "node:path";
 import fsPromises from "node:fs/promises";
-import { suite, test, expect, vitest, afterEach } from "vitest";
+import { suite, test, expect, vitest, beforeEach, afterEach } from "vitest";
 import type { PyodideInterface } from "pyodide";
-import { startWorkerEnv, type PostMessageFn } from "./worker-runtime";
-import * as pyodideLoader from "./pyodide-loader";
+import { type PostMessageFn } from "./worker-runtime";
 import { WorkerInitialData } from "./types";
 import stliteLibWheelUrl from "stlite_lib.whl"; // This is an alias configured in vitest.config.ts
 import streamlitWheelUrl from "streamlit.whl"; // This is an alias configured in vitest.config.ts
 const JEDI_WHEEL = new URL(
   "../../py/jedi/jedi-0.19.1-py2.py3-none-any.whl",
-  import.meta.url
+  import.meta.url,
 ).href;
 
 const pyodideUrl = path.resolve("../../node_modules/pyodide/pyodide.mjs"); // Installed at the Yarn workspace root;
@@ -26,26 +25,35 @@ interface InitializeWorkerEnvOptions {
   files: WorkerInitialData["files"];
   requirements?: WorkerInitialData["requirements"];
 }
-function initializeWorkerEnv(
-  options: InitializeWorkerEnvOptions
+async function initializeWorkerEnv(
+  options: InitializeWorkerEnvOptions,
 ): Promise<PyodideInterface> {
+  const pyodideLoader: typeof import("./pyodide-loader") =
+    await vitest.importActual("./pyodide-loader");
+  const initPyodide = pyodideLoader.initPyodide;
+
+  // Get the Pyodide instance from the initializer called in the worker by spying on it.
+  let pyodide: PyodideInterface;
+  const initPyodideMock = vitest
+    .fn()
+    .mockImplementation(async (...args: Parameters<typeof initPyodide>) => {
+      pyodide = await initPyodide(...args);
+      return pyodide;
+    });
+  // Use `doMock` to work with the async import of `pyodide-loader` below.
+  vitest.doMock("./pyodide-loader", () => ({
+    initPyodide: initPyodideMock,
+  }));
+
+  // Use async-import in combination with `vi.resetModules()` in `beforeEach()`
+  // to reset the module cache and re-import the module.
+  const { startWorkerEnv } = await import("./worker-runtime");
+
   return new Promise<PyodideInterface>((resolve, reject) => {
-    let pyodide: PyodideInterface;
-
-    // Get the Pyodide instance from the initializer called in the worker by spying on it.
-    const originalInitPyodide = pyodideLoader.initPyodide;
-    const spiedInitPyodide = vitest
-      .spyOn(pyodideLoader, "initPyodide")
-      .mockImplementationOnce(async (...args) => {
-        const loadedPyodide = await originalInitPyodide(...args);
-        pyodide = loadedPyodide;
-        return loadedPyodide;
-      });
-
     const postMessage: PostMessageFn = (message) => {
       if (message.type === "event:loaded") {
-        expect(spiedInitPyodide).toHaveBeenCalled();
-        spiedInitPyodide.mockRestore();
+        expect(initPyodideMock).toHaveBeenCalled();
+        initPyodideMock.mockRestore();
         resolve(pyodide);
       } else if (message.type === "event:error") {
         reject(message.data.error);
@@ -64,10 +72,10 @@ function initializeWorkerEnv(
             entrypoint: options.entrypoint,
             wheels: {
               stliteLib: getWheelInstallPath(
-                stliteLibWheelUrl as unknown as string
+                stliteLibWheelUrl as unknown as string,
               ),
               streamlit: getWheelInstallPath(
-                streamlitWheelUrl as unknown as string
+                streamlitWheelUrl as unknown as string,
               ),
               jedi: getWheelInstallPath(JEDI_WHEEL as unknown as string),
             },
@@ -77,7 +85,7 @@ function initializeWorkerEnv(
             prebuiltPackageNames: [],
           },
         },
-      })
+      }),
     );
   });
 }
@@ -94,7 +102,7 @@ const TEST_SOURCES: {
     files: {
       "data.column_config.py": path.resolve(
         __dirname,
-        "../../sharing-editor/public/samples/011_component_gallery/pages/data.column_config.py"
+        "../../sharing-editor/public/samples/011_component_gallery/pages/data.column_config.py",
       ),
     },
   },
@@ -103,7 +111,7 @@ const TEST_SOURCES: {
     files: {
       "chat.echo.py": path.resolve(
         __dirname,
-        "../../sharing-editor/public/samples/011_component_gallery/pages/chat.echo.py"
+        "../../sharing-editor/public/samples/011_component_gallery/pages/chat.echo.py",
       ),
     },
   },
@@ -112,15 +120,15 @@ const TEST_SOURCES: {
     files: {
       "media.logo.py": path.resolve(
         __dirname,
-        "../../sharing-editor/public/samples/011_component_gallery/pages/media.logo.py"
+        "../../sharing-editor/public/samples/011_component_gallery/pages/media.logo.py",
       ),
       "pages/images/horizontal_red.png": path.resolve(
         __dirname,
-        "../../sharing-editor/public/samples/011_component_gallery/pages/images/horizontal_red.png"
+        "../../sharing-editor/public/samples/011_component_gallery/pages/images/horizontal_red.png",
       ),
       "pages/images/icon_red.png": path.resolve(
         __dirname,
-        "../../sharing-editor/public/samples/011_component_gallery/pages/images/icon_red.png"
+        "../../sharing-editor/public/samples/011_component_gallery/pages/images/icon_red.png",
       ),
     },
   },
@@ -130,7 +138,7 @@ const TEST_SOURCES: {
     files: {
       "text.write_stream.py": path.resolve(
         __dirname,
-        "../../sharing-editor/public/samples/011_component_gallery/pages/text.write_stream.py"
+        "../../sharing-editor/public/samples/011_component_gallery/pages/text.write_stream.py",
       ),
     },
     additionalAppTestCode: `
@@ -144,13 +152,16 @@ await at.run(timeout=20)
     files: {
       "layout.columns2.py": path.resolve(
         __dirname,
-        "../../sharing-editor/public/samples/011_component_gallery/pages/layout.columns2.py"
+        "../../sharing-editor/public/samples/011_component_gallery/pages/layout.columns2.py",
       ),
     },
   },
 ];
 
 suite("Worker intergration test running an app", async () => {
+  beforeEach(() => {
+    vitest.resetModules();
+  });
   afterEach(() => {
     vitest.restoreAllMocks();
   });
@@ -166,9 +177,9 @@ suite("Worker intergration test running an app", async () => {
               async ([filename, filepath]) => {
                 const content = await fsPromises.readFile(filepath);
                 return [filename, { data: content }];
-              }
-            )
-          )
+              },
+            ),
+          ),
         );
 
         const pyodide = await initializeWorkerEnv({
@@ -179,7 +190,7 @@ suite("Worker intergration test running an app", async () => {
 
         pyodide.globals.set(
           "__additionalAppTestCode__",
-          testSource.additionalAppTestCode
+          testSource.additionalAppTestCode,
         );
 
         // The code above setting up the worker env is good enough to check if the worker is set up correctly,
@@ -209,7 +220,7 @@ assert len(w) == 0, f"Warning occurred: {w[0].message if w else None}"
       },
       {
         timeout: 60 * 1000,
-      }
+      },
     );
   }
 });

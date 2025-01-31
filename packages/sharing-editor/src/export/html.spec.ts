@@ -1,8 +1,5 @@
-import {
-  exportAsHtml,
-  escapeTextForJsTemplateLiteral,
-  RUNTIME_VERSION,
-} from "./html";
+import { describe, it, expect } from "vitest";
+import { exportAsHtml, escapeTextForJsTemplateLiteral } from "./html";
 import { JSDOM } from "jsdom";
 import * as babelParser from "@babel/parser";
 import { AppData } from "@stlite/sharing-common/dist";
@@ -34,56 +31,70 @@ describe("exportAsHtml", () => {
     expect(linkTags.length).toBe(1);
     expect(linkTags[0].rel).toEqual("stylesheet");
     expect(linkTags[0].href).toEqual(
-      `https://cdn.jsdelivr.net/npm/@stlite/mountable@${RUNTIME_VERSION}/build/stlite.css`
+      `https://cdn.jsdelivr.net/npm/@stlite/browser@${SELF_HOSTING_RUNTIME_VERSION}/build/style.css`,
     );
 
     const scriptTags = dom.body.getElementsByTagName("script");
-    expect(scriptTags.length).toBe(2);
+    expect(scriptTags.length).toBe(1);
 
-    const stliteLoaderScriptTag = scriptTags[0];
-    expect(stliteLoaderScriptTag.src).toEqual(
-      `https://cdn.jsdelivr.net/npm/@stlite/mountable@${RUNTIME_VERSION}/build/stlite.js`
-    );
-    expect(stliteLoaderScriptTag.text).toEqual("");
-
-    const appScriptTag = scriptTags[1];
+    const appScriptTag = scriptTags[0];
     expect(appScriptTag.src).toEqual("");
+    expect(appScriptTag.type).toEqual("module");
+
     const appScriptContent = appScriptTag.text;
 
-    const jsAstRoot = babelParser.parse(appScriptContent);
-    // The source code only includes `stlite.mount()`.
-    expect(jsAstRoot.program.body.length).toBe(1);
+    const jsAstRoot = babelParser.parse(appScriptContent, {
+      sourceType: "module",
+    });
+    // The source code contains an import and the `mount()` call.
+    expect(jsAstRoot.program.body.length).toBe(2);
 
-    const [stliteMount] = jsAstRoot.program.body;
+    const [importMount, mountCall] = jsAstRoot.program.body;
 
-    expect(stliteMount).toEqual(
+    expect(importMount).toEqual(
+      expect.objectContaining({
+        type: "ImportDeclaration",
+        source: expect.objectContaining({
+          type: "StringLiteral",
+          value: `https://cdn.jsdelivr.net/npm/@stlite/browser@${SELF_HOSTING_RUNTIME_VERSION}/build/stlite.js`,
+        }),
+        specifiers: [
+          expect.objectContaining({
+            type: "ImportSpecifier",
+            imported: expect.objectContaining({
+              type: "Identifier",
+              name: "mount",
+            }),
+            local: expect.objectContaining({
+              type: "Identifier",
+              name: "mount",
+            }),
+          }),
+        ],
+      }),
+    );
+
+    expect(mountCall).toEqual(
       expect.objectContaining({
         type: "ExpressionStatement",
         expression: expect.objectContaining({
           type: "CallExpression",
           callee: expect.objectContaining({
-            type: "MemberExpression",
-            object: expect.objectContaining({
-              type: "Identifier",
-              name: "stlite",
-            }),
-            property: expect.objectContaining({
-              type: "Identifier",
-              name: "mount",
-            }),
+            type: "Identifier",
+            name: "mount",
           }),
         }),
-      })
+      }),
     );
     if (
-      stliteMount.type !== "ExpressionStatement" ||
-      stliteMount.expression.type !== "CallExpression"
+      mountCall.type !== "ExpressionStatement" ||
+      mountCall.expression.type !== "CallExpression"
     ) {
       throw new Error();
     }
 
-    expect(stliteMount.expression.arguments.length).toBe(2);
-    const [mountOptions, mountTarget] = stliteMount.expression.arguments;
+    expect(mountCall.expression.arguments.length).toBe(2);
+    const [mountOptions, mountTarget] = mountCall.expression.arguments;
 
     expect(mountTarget).toEqual(
       expect.objectContaining({
@@ -105,7 +116,7 @@ describe("exportAsHtml", () => {
             value: "root",
           }),
         ],
-      })
+      }),
     );
 
     const expectedRequirements = appData.requirements;
@@ -156,7 +167,7 @@ describe("exportAsHtml", () => {
                     quasis: [
                       expect.objectContaining({
                         value: expect.objectContaining({
-                          // @ts-ignore
+                          // @ts-expect-error The content field is a discriminated union type and TypeScript cannot infer the text field exists
                           raw: appData.files["streamlit_app.py"].content.text,
                         }),
                       }),
@@ -167,7 +178,7 @@ describe("exportAsHtml", () => {
             }),
           }),
         ],
-      })
+      }),
     );
   });
 
@@ -200,56 +211,69 @@ describe("exportAsHtml", () => {
     expect(linkTags.length).toBe(1);
     expect(linkTags[0].rel).toEqual("stylesheet");
     expect(linkTags[0].href).toEqual(
-      `https://cdn.jsdelivr.net/npm/@stlite/mountable@${RUNTIME_VERSION}/build/stlite.css`
+      `https://cdn.jsdelivr.net/npm/@stlite/browser@${SELF_HOSTING_RUNTIME_VERSION}/build/style.css`,
     );
 
     const scriptTags = dom.body.getElementsByTagName("script");
-    expect(scriptTags.length).toBe(2);
+    expect(scriptTags.length).toBe(1);
 
-    const stliteLoaderScriptTag = scriptTags[0];
-    expect(stliteLoaderScriptTag.src).toEqual(
-      `https://cdn.jsdelivr.net/npm/@stlite/mountable@${RUNTIME_VERSION}/build/stlite.js`
-    );
-    expect(stliteLoaderScriptTag.text).toEqual("");
-
-    const appScriptTag = scriptTags[1];
+    const appScriptTag = scriptTags[0];
     expect(appScriptTag.src).toEqual("");
+    expect(appScriptTag.type).toEqual("module");
     const appScriptContent = appScriptTag.text;
 
-    const jsAstRoot = babelParser.parse(appScriptContent);
-    // The source code only includes `stlite.mount()` and the Base64 decoder function definition.
-    expect(jsAstRoot.program.body.length).toBe(2);
+    const jsAstRoot = babelParser.parse(appScriptContent, {
+      sourceType: "module",
+    });
+    // The source contains the import syntax, `mount()` call, and the Base64 decoder function definition.
+    expect(jsAstRoot.program.body.length).toBe(3);
 
-    const [stliteMount, funcDef] = jsAstRoot.program.body;
+    const [importMount, mountCall, funcDef] = jsAstRoot.program.body;
 
-    expect(stliteMount).toEqual(
+    expect(importMount).toEqual(
+      expect.objectContaining({
+        type: "ImportDeclaration",
+        source: expect.objectContaining({
+          type: "StringLiteral",
+          value: `https://cdn.jsdelivr.net/npm/@stlite/browser@${SELF_HOSTING_RUNTIME_VERSION}/build/stlite.js`,
+        }),
+        specifiers: [
+          expect.objectContaining({
+            type: "ImportSpecifier",
+            imported: expect.objectContaining({
+              type: "Identifier",
+              name: "mount",
+            }),
+            local: expect.objectContaining({
+              type: "Identifier",
+              name: "mount",
+            }),
+          }),
+        ],
+      }),
+    );
+
+    expect(mountCall).toEqual(
       expect.objectContaining({
         type: "ExpressionStatement",
         expression: expect.objectContaining({
           type: "CallExpression",
           callee: expect.objectContaining({
-            type: "MemberExpression",
-            object: expect.objectContaining({
-              type: "Identifier",
-              name: "stlite",
-            }),
-            property: expect.objectContaining({
-              type: "Identifier",
-              name: "mount",
-            }),
+            type: "Identifier",
+            name: "mount",
           }),
         }),
-      })
+      }),
     );
     if (
-      stliteMount.type !== "ExpressionStatement" ||
-      stliteMount.expression.type !== "CallExpression"
+      mountCall.type !== "ExpressionStatement" ||
+      mountCall.expression.type !== "CallExpression"
     ) {
       throw new Error();
     }
 
-    expect(stliteMount.expression.arguments.length).toBe(2);
-    const [mountOptions, mountTarget] = stliteMount.expression.arguments;
+    expect(mountCall.expression.arguments.length).toBe(2);
+    const [mountOptions, mountTarget] = mountCall.expression.arguments;
 
     expect(mountTarget).toEqual(
       expect.objectContaining({
@@ -271,7 +295,7 @@ describe("exportAsHtml", () => {
             value: "root",
           }),
         ],
-      })
+      }),
     );
 
     const expectedRequirements = appData.requirements;
@@ -322,7 +346,7 @@ describe("exportAsHtml", () => {
                     quasis: [
                       expect.objectContaining({
                         value: expect.objectContaining({
-                          // @ts-ignore
+                          // @ts-expect-error The content field is a discriminated union type and TypeScript cannot infer the text field exists
                           raw: appData.files["streamlit_app.py"].content.text,
                         }),
                       }),
@@ -353,7 +377,7 @@ describe("exportAsHtml", () => {
             }),
           }),
         ],
-      })
+      }),
     );
 
     expect(funcDef).toEqual(
@@ -363,7 +387,7 @@ describe("exportAsHtml", () => {
           type: "Identifier",
           name: "base64ToU8A",
         }),
-      })
+      }),
     );
   });
 });

@@ -1,4 +1,3 @@
-import React from "react";
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, waitFor } from "@testing-library/react";
 import { StliteKernel } from "../../kernel";
@@ -76,10 +75,13 @@ describe("<CustomComponentIFrame />", () => {
       requirements: [],
       prebuiltPackageNames: [],
     });
+    function CustomIframe(props: JSX.IntrinsicElements["iframe"]) {
+      return <iframe {...props} />;
+    }
     const { container } = render(
       <StliteKernelProvider kernel={kernel}>
-        <CustomComponentIFrame src={src} />
-      </StliteKernelProvider>
+        <CustomComponentIFrame src={src} IframeComponent={CustomIframe} />
+      </StliteKernelProvider>,
     );
 
     const getIFrame = () => container.getElementsByTagName("iframe")[0];

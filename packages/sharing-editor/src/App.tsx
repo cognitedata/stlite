@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import "./App.css";
 import {
   embedAppDataToUrl,
@@ -24,13 +24,18 @@ import ResponsiveSideBySidePanes from "./components/ResponsiveSideBySidePanes";
 import ResponsiveDrawoer from "./components/ResponsiveDrawer";
 import SampleAppMenu from "./SampleAppMenu";
 import LoadingScreen from "./components/LoadingScreen";
-import { URL_SEARCH_KEY_SAMPLE_APP_ID, URL_SEARCH_KEY_EMBED_MODE } from "./url";
+import {
+  URL_SEARCH_KEY_SAMPLE_APP_ID,
+  URL_SEARCH_KEY_EMBED_MODE,
+  URL_SEARCH_KEY_SHARED_WORKER_MODE,
+} from "./url";
 import { useAppColorSchemePreference } from "./ColorScheme/hooks";
 
 interface AppLoaderData {
   appData: AppData;
   sampleAppId: string | null;
   embedMode: boolean;
+  sharedWorkerMode: boolean;
 }
 export const loader = async ({
   request,
@@ -46,24 +51,34 @@ export const loader = async ({
   }
 
   const embedMode = url.searchParams.get(URL_SEARCH_KEY_EMBED_MODE) === "true";
+  const sharedWorkerMode =
+    url.searchParams.get(URL_SEARCH_KEY_SHARED_WORKER_MODE) === "true";
 
   if (parsedSampleAppId == null) {
     try {
       const appData = await extractAppDataFromUrl();
-      return { appData, sampleAppId: null, embedMode };
+      return { appData, sampleAppId: null, embedMode, sharedWorkerMode };
     } catch {
       const defaultSampleAppId = getDefaultSampleAppId();
       const appData = await loadSampleAppData(defaultSampleAppId);
-      return { appData, sampleAppId: defaultSampleAppId, embedMode };
+      return {
+        appData,
+        sampleAppId: defaultSampleAppId,
+        embedMode,
+        sharedWorkerMode,
+      };
     }
   }
 
   const appData = await loadSampleAppData(parsedSampleAppId);
-  return { appData, sampleAppId: parsedSampleAppId, embedMode };
+  return {
+    appData,
+    sampleAppId: parsedSampleAppId,
+    embedMode,
+    sharedWorkerMode,
+  };
 };
 
-const SHARING_APP_URL =
-  process.env.REACT_APP_SHARING_APP_URL ?? "http://localhost:3000/";
 const SHARING_APP_ORIGIN = new URL(SHARING_APP_URL).origin;
 
 function App() {
@@ -71,6 +86,7 @@ function App() {
     appData: initialAppData,
     sampleAppId: initialSampleAppId,
     embedMode,
+    sharedWorkerMode,
   } = useLoaderData() as AppLoaderData;
 
   const [sampleAppId, setSampleAppId] = useState(initialSampleAppId);
@@ -79,9 +95,12 @@ function App() {
   }, [initialSampleAppId]);
 
   const onAppDataUpdate = useCallback((appData: AppData) => {
+    const params = new URLSearchParams(window.location.search);
+    params.delete(URL_SEARCH_KEY_SAMPLE_APP_ID); // Exclude the sample app ID that conflicts the appData content.
+    const paramsString = params.size > 0 ? `?${params.toString()}` : "";
     const newUrl = embedAppDataToUrl(
-      window.location.origin + window.location.pathname, // window.location.search is excluded because it may include the sample app ID that conflicts the appData content.
-      appData
+      window.location.origin + window.location.pathname + paramsString,
+      appData,
     );
     window.history.replaceState(null, "", newUrl);
     setSampleAppId(null);
@@ -320,6 +339,7 @@ function App() {
                       ? null
                       : appColorSchemePreference
                   }
+                  sharedWorkerMode={sharedWorkerMode}
                 />
               )}
             </>

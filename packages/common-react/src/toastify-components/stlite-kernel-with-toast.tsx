@@ -1,4 +1,3 @@
-import React from "react";
 import type { StliteKernel, StliteKernelOptions } from "@stlite/kernel";
 import { toast, ToastPromiseParams } from "react-toastify";
 import ErrorToastContent from "./ErrorToastContent";
@@ -34,7 +33,7 @@ function stliteStyledPromiseToast<
     },
     {
       hideProgressBar: true,
-      position: toast.POSITION.BOTTOM_RIGHT,
+      position: "bottom-right",
     },
   );
 }

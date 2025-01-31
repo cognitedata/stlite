@@ -7,6 +7,7 @@ module.exports = {
   extends: [
     "eslint:recommended",
     "plugin:react/recommended",
+    "plugin:react/jsx-runtime",
     "plugin:react-hooks/recommended",
     "plugin:@typescript-eslint/recommended",
     "prettier",
@@ -22,5 +23,10 @@ module.exports = {
   plugins: ["react", "@typescript-eslint"],
   rules: {
     "no-useless-escape": "warn",
+  },
+  settings: {
+    react: {
+      version: "detect",
+    },
   },
 };

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, protocol } from "electron";
+import { app, BrowserWindow, ipcMain, protocol, net } from "electron";
 import * as path from "node:path";
 import * as fsPromises from "node:fs/promises";
 import workerThreads from "node:worker_threads";
@@ -11,14 +11,20 @@ import {
 } from "./manifest";
 
 if (process.env.NODE_ENV === "development") {
-  console.log("Hot-reloading Electron enabled");
+  const electronPath =
+    process.platform === "win32"
+      ? path.resolve(
+          require.resolve("electron/package.json"),
+          "../../electron/dist/electron.exe",
+        )
+      : path.resolve(
+          require.resolve("electron/package.json"),
+          "../../.bin/electron",
+        );
+  console.log("Hot-reloading Electron enabled", electronPath);
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   require("electron-reload")(__dirname, {
-    electron: path.resolve(
-      __dirname,
-      process.platform === "win32"
-        ? "../../node_modules/electron/dist/electron.exe"
-        : "../../node_modules/.bin/electron",
-    ),
+    electron: electronPath,
   });
 }
 
@@ -65,18 +71,32 @@ const createWindow = async () => {
   // Check the IPC sender in every callback below,
   // following the security best practice, "17. Validate the sender of all IPC messages."
   // https://www.electronjs.org/docs/latest/tutorial/security#17-validate-the-sender-of-all-ipc-messages
-  const isValidIpcSender = (frame: Electron.WebFrameMain): boolean => {
+  const isValidIpcSender = (frame: Electron.WebFrameMain | null): boolean => {
+    if (frame == null) {
+      // Frame can be null after a cross-origin navigation: https://www.electronjs.org/docs/latest/breaking-changes#planned-breaking-api-changes-330
+      return false;
+    }
+
     // In MPA, `frame.url` can include a sub path like `file:///index.html/sub_page_name`,
     // so we need to check if the URL is a descendant of the index URL.
     return isDescendantURL(indexUrl, frame.url);
   };
-
-  ipcMain.handle("readSitePackagesSnapshot", (ev) => {
+  const validateIpcMainEvent = (
+    ev: Electron.IpcMainInvokeEvent,
+    handlerNameForDebug: string,
+  ): void => {
+    // NOTE: This method should be called immediately after the event is received
+    // because the `senderFrame` property may be `null` after a cross-origin navigation.
+    // Ref: https://www.electronjs.org/docs/latest/breaking-changes#behavior-changed-frame-properties-may-retrieve-detached-webframemain-instances-or-none-at-all
     if (!isValidIpcSender(ev.senderFrame)) {
       throw new Error(
-        `Invalid IPC sender (readSitePackagesSnapshot) ${ev.senderFrame.url}`,
+        `Invalid IPC sender (${handlerNameForDebug}) ${ev.senderFrame?.url ?? "(null)"}`,
       );
     }
+  };
+
+  ipcMain.handle("readSitePackagesSnapshot", (ev) => {
+    validateIpcMainEvent(ev, "readSitePackagesSnapshot");
 
     // This archive file has to be created by ./bin/dump_snapshot.ts
     const archiveFilePath = path.resolve(
@@ -86,11 +106,7 @@ const createWindow = async () => {
     return fsPromises.readFile(archiveFilePath);
   });
   ipcMain.handle("readPrebuiltPackageNames", async (ev): Promise<string[]> => {
-    if (!isValidIpcSender(ev.senderFrame)) {
-      throw new Error(
-        `Invalid IPC sender (readPrebuiltPackageNames) ${ev.senderFrame.url}`,
-      );
-    }
+    validateIpcMainEvent(ev, "readPrebuiltPackageNames");
 
     const prebuiltPackagesTxtPath = path.resolve(
       __dirname,
@@ -110,11 +126,7 @@ const createWindow = async () => {
   ipcMain.handle(
     "readStreamlitAppDirectory",
     async (ev): Promise<Record<string, Buffer>> => {
-      if (!isValidIpcSender(ev.senderFrame)) {
-        throw new Error(
-          `Invalid IPC sender (readStreamlitAppDirectory) ${ev.senderFrame.url}`,
-        );
-      }
+      validateIpcMainEvent(ev, "readStreamlitAppDirectory");
 
       const appDir = path.resolve(__dirname, "../app_files");
       return walkRead(appDir);
@@ -129,11 +141,7 @@ const createWindow = async () => {
 
   let worker: workerThreads.Worker | null = null;
   ipcMain.handle("initializeNodeJsWorker", async (ev) => {
-    if (!isValidIpcSender(ev.senderFrame)) {
-      throw new Error(
-        `Invalid IPC sender (initializeNodeJsWorker) ${ev.senderFrame.url}`,
-      );
-    }
+    validateIpcMainEvent(ev, "initializeNodeJsWorker");
 
     // Use the ESM version of Pyodide because `importScripts()` can't be used in this environment.
     const pyodidePath = path.resolve(__dirname, "..", "pyodide", "pyodide.mjs"); // For Windows compatibility, rely on path.resolve() to join the path elements.
@@ -146,7 +154,7 @@ const createWindow = async () => {
       await ensureNodefsMountpoints(nodefsMountpoints);
     }
 
-    function onMessageFromWorker(value: any) {
+    function onMessageFromWorker(value: unknown) {
       mainWindow.webContents.send("messageFromNodeJsWorker", value);
     }
     worker = new workerThreads.Worker(path.resolve(__dirname, "worker.js"), {
@@ -162,11 +170,7 @@ const createWindow = async () => {
     });
   });
   ipcMain.on("messageToNodeJsWorker", (ev, { data, portId }) => {
-    if (!isValidIpcSender(ev.senderFrame)) {
-      throw new Error(
-        `Invalid IPC sender (messageToNodeJsWorker) ${ev.senderFrame.url}`,
-      );
-    }
+    validateIpcMainEvent(ev, "messageToNodeJsWorker");
 
     if (worker == null) {
       return;
@@ -181,10 +185,8 @@ const createWindow = async () => {
     const eventSim = { data, port: channel.port2 };
     worker.postMessage(eventSim, [channel.port2]);
   });
-  ipcMain.handle("terminate", (ev, { data, portId }) => {
-    if (!isValidIpcSender(ev.senderFrame)) {
-      throw new Error(`Invalid IPC sender (terminate) ${ev.senderFrame.url}`);
-    }
+  ipcMain.handle("terminateNodeJsWorker", (ev, { data, portId }) => {
+    validateIpcMainEvent(ev, "terminateNodeJsWorker");
 
     worker?.terminate();
     worker = null;
@@ -193,7 +195,7 @@ const createWindow = async () => {
   mainWindow.on("closed", () => {
     ipcMain.removeHandler("initializeNodeJsWorker");
     ipcMain.removeHandler("messageToNodeJsWorker");
-    ipcMain.removeHandler("terminate");
+    ipcMain.removeHandler("terminateNodeJsWorker");
   });
 
   // Even when the entrypoint is a local file like the production build,
@@ -214,6 +216,10 @@ const createWindow = async () => {
 // https://www.electronjs.org/docs/latest/tutorial/security#4-enable-process-sandboxing
 app.enableSandbox();
 
+// Necessary for WebWorker to work in the renderer process, since Electron 32.
+// Ref: https://github.com/electron/electron/issues/43556#issuecomment-2345647103
+app.commandLine.appendSwitch("disable-features", "PlzDedicatedWorker");
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -223,14 +229,22 @@ app.whenReady().then(() => {
   // which is configured at `package.json` with the `"homepage"` field.
   // Ref: https://github.com/electron/electron/issues/4612#issuecomment-189116655
   const bundleBasePath = path.resolve(__dirname, "..");
-  protocol.interceptFileProtocol("file", function (req, callback) {
+  protocol.handle("file", (req) => {
     const filePath = new URL(req.url).pathname; // `file://<absolute_path>?<query>#<hash>` -> `<absolute_path>`
-    if (path.isAbsolute(filePath)) {
-      const resolvedFilePath = path.join(bundleBasePath, filePath);
-      callback(path.normalize(resolvedFilePath));
-    } else {
-      callback(filePath);
+
+    if (!path.isAbsolute(filePath)) {
+      return net.fetch(req, {
+        bypassCustomProtocolHandlers: true,
+      });
     }
+
+    const resolvedFilePath = path.normalize(
+      path.join(bundleBasePath, filePath),
+    );
+    const modifiedReq = new Request("file://" + resolvedFilePath, req);
+    return net.fetch(modifiedReq, {
+      bypassCustomProtocolHandlers: true,
+    });
   });
 
   createWindow();

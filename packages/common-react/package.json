@@ -1,29 +1,29 @@
 {
   "name": "@stlite/common-react",
-  "version": "0.69.0",
+  "version": "0.77.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "Apache-2.0",
   "private": true,
   "scripts": {
-    "start": "tsc -w",
-    "build": "tsc",
+    "start": "tsc -b -w",
+    "build": "tsc -b",
     "fix:eslint": "eslint --fix 'src/**/*.{ts,tsx}'",
     "fix:prettier": "prettier --write .",
     "check:eslint": "eslint 'src/**/*.{ts,tsx}'",
     "check:prettier": "prettier --check ."
   },
   "dependencies": {
-    "@streamlit/lib": "1.39.0"
+    "@stlite/kernel": "^0.77.0",
+    "@streamlit/lib": "1.41.0",
+    "react-toastify": "^11.0.2"
   },
   "devDependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-toastify": "^9.1.1"
+    "react-dom": "^18.2.0"
   },
   "peerDependencies": {
     "react": "^17.0.0 || ^18.0.0",
-    "react-dom": "^17.0.0 || ^18.0.0",
-    "react-toastify": "^9.1.1"
+    "react-dom": "^17.0.0 || ^18.0.0"
   }
 }

@@ -66,6 +66,47 @@ await foo("Hello, world!")
             """
 import streamlit as st
 
+a = st.write_stream("Hello, world!")
+""",
+            """
+import streamlit as st
+
+a = await st.write_stream("Hello, world!")
+""",
+            id="call_in_assignment_statement",
+        ),
+        pytest.param(
+            """
+import streamlit as st
+
+if a := st.write_stream("Hello, world!"):
+    pass
+""",
+            """
+import streamlit as st
+
+if a := await st.write_stream("Hello, world!"):
+    pass
+""",
+            id="call_in_assignment_expression",
+        ),
+        pytest.param(
+            """
+from streamlit import write_stream
+
+write_stream("Hello, world!")
+""",
+            """
+from streamlit import write_stream
+
+await write_stream("Hello, world!")
+""",
+            id="from_streamlit_import_write_stream",
+        ),
+        pytest.param(
+            """
+import streamlit as st
+
 if True:
     st.write_stream("Hello, world!")
 elif False:
@@ -867,4 +908,96 @@ def test_not_convert_page_run(test_input):
     tree = patch(test_input, "test.py")
     assert ast.dump(tree, indent=4) == ast.dump(
         ast.parse(test_input, "test.py", "exec"), indent=4
+    )
+
+
+@pytest.mark.parametrize(
+    "test_input,expected",
+    [
+        pytest.param(
+            """
+import asyncio
+
+async def main():
+    return 42
+
+asyncio.run(main())
+""",
+            """
+import asyncio
+
+async def main():
+    return 42
+
+await main()
+""",
+            id="asyncio_run_basic",
+        ),
+        pytest.param(
+            """
+import asyncio
+
+async def main():
+    return 42
+
+awaitable = main()
+
+asyncio.run(awaitable)
+""",
+            """
+import asyncio
+
+async def main():
+    return 42
+
+awaitable = main()
+
+await awaitable
+""",
+            id="asyncio_run_non_function_call",
+        ),
+        pytest.param(
+            """
+from asyncio import run
+
+async def main():
+    return 42
+
+run(main())
+""",
+            """
+from asyncio import run
+
+async def main():
+    return 42
+
+await main()
+""",
+            id="asyncio_run_from_import",
+        ),
+        pytest.param(
+            """
+from asyncio import *
+
+async def main():
+    return 42
+
+run(main())
+""",
+            """
+from asyncio import *
+
+async def main():
+    return 42
+
+await main()
+""",
+            id="asyncio_run_wildcard_import",
+        ),
+    ],
+)
+def test_convert_asyncio_run(test_input, expected):
+    tree = patch(test_input, "test.py")
+    assert ast.dump(tree, indent=4) == ast.dump(
+        ast.parse(expected, "test.py", "exec"), indent=4
     )

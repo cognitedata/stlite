@@ -2,7 +2,8 @@
 
 ### Python requirement
 
-Use the Python version same as the one which the [currently used Pyodide](./packages/kernel/src/worker.ts) runs.
+- Install [`uv`](https://docs.astral.sh/uv/).
+- Use the Python version same as the one which the [currently used Pyodide](./packages/kernel/src/worker.ts) runs.
 
 ### Initialize the development environment
 
@@ -21,10 +22,10 @@ cd packages/kernel
 yarn start
 ```
 
-#### `@stlite/mountable`
+#### `@stlite/browser`
 
 ```shell
-cd packages/mountable
+cd packages/browser
 yarn start
 ```
 

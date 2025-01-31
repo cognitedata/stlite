@@ -301,3 +301,6 @@ tags
 
 # sed backup files on macOS
 *.*-e
+
+# Build state files
+.make/

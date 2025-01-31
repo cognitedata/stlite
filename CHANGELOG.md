@@ -1,9 +1,261 @@
-# Changelog
+≤# Changelog
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.77.0] - 2025-01-28
+
+### General
+
+#### Changed
+
+- Update Pyodide to 0.27.2, [#1300](https://github.com/whitphx/stlite/pull/1300).
+
+## [0.76.3] - 2025-01-28
+
+- Internal refactoring and package updates.
+
+## [0.76.2] - 2025-01-14
+
+### `@stlite/vscode-stlite`
+
+#### Fixed
+
+- Use the new `@stlite/browser` package, [#1270](https://github.com/whitphx/stlite/pull/1270).
+- Add `__pycache__` to the default ignore list, [#1270](https://github.com/whitphx/stlite/pull/1270).
+
+## [0.76.1] - 2025-01-12
+
+### `@stlite/browser`
+
+#### Fixed
+
+- Fix the cross-origin worker trick to work on a page loaded via `file://` scheme, [#1258](https://github.com/whitphx/stlite/pull/1258).
+
+## [0.76.0] - 2025-01-11
+
+### General
+
+#### Changed
+
+- Update Streamlit to 1.41.0, [#1199](https://github.com/whitphx/stlite/pull/1199).
+
+### `@stlite/mountable`
+
+#### Changed
+
+- **[BREAKING]** `@stlite/mountable` is renamed to `@stlite/browser`, [#1243](https://github.com/whitphx/stlite/pull/1243). Its API is changed as below.
+
+### `@stlite/browser`
+
+#### Added
+
+- Renamed from `@stlite/mountable`, [#1243](https://github.com/whitphx/stlite/pull/1243).
+- **[BREAKING]** It is bundled as an ESM package now. The way of importing the package has been changed as below.
+
+  ```html
+  <script type="module">
+    import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@0.76.0/build/stlite.js";
+    mount(
+      `
+  import streamlit as st
+  
+  name = st.text_input('Your name')
+  st.write("Hello,", name or "world")
+  `,
+      document.getElementById("root"),
+    );
+  </script>
+  ```
+
+- Cross-origin worker trick for ESM workers, [#1219](https://github.com/whitphx/stlite/pull/1219).
+
+### `@stlite/desktop`
+
+#### Fix
+
+- Workaround for Electron 32+. [#1231](https://github.com/whitphx/stlite/pull/1231).
+- Support Electron 33+, [#1240](https://github.com/whitphx/stlite/pull/1240).
+
+### How to migrate from `@stlite/mountable` to `@stlite/browser`
+
+The points are:
+
+- **Change the way of importing the package** because `@stlite/browser` is now an ESM package.
+  - **Delete `<script src="https://.../stlite.js"></script>`.** The script tag loading the Stlite script is no longer needed.
+  - Instead, **add `type="module"` to the script tag where you use Stlite** and **import the package in the way like `import * as stlite from "https://.../stlite.js";` inside it**, then you can use `stlite.mount()` as before.
+    - `import { mount } from "https://.../stlite.js";` and calling `mount()` directly is also available.
+  - Note that the package name is changed from `@stlite/mountable` to `@stlite/browser`, so the **CDN URL is also changed** to `https://cdn.jsdelivr.net/npm/@stlite/browser@<version>/build/stlite.js`.
+- **Change the CSS file name** from `stlite.css` to `style.css`.
+- The `mount()` API is the same as before.
+
+Here is an example of migrating from `@stlite/mountable` to `@stlite/browser`:
+
+The new way with `@stlite/browser`:
+
+```html
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>Stlite App</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@stlite/browser@0.76.0/build/style.css"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      import * as stlite from "https://cdn.jsdelivr.net/npm/@stlite/browser@0.76.0/build/stlite.js";
+      // import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@0.76.0/build/stlite.js";  // This style is also available. In this case, you can call `mount()` directly instead of `stlite.mount()`.
+      stlite.mount(
+        `
+import streamlit as st
+
+name = st.text_input('Your name')
+st.write("Hello,", name or "world")
+`,
+        document.getElementById("root"),
+      );
+    </script>
+  </body>
+</html>
+```
+
+The previous API with `@stlite/mountable`:
+
+```html
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>Stlite App</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.73.0/build/stlite.css"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.73.0/build/stlite.js"></script>
+    <script>
+      stlite.mount(
+        `
+import streamlit as st
+
+name = st.text_input('Your name')
+st.write("Hello,", name or "world")
+`,
+        document.getElementById("root"),
+      );
+    </script>
+  </body>
+</html>
+```
+
+## [0.75.0] - 2025-01-05
+
+### `@stlite/mountable`
+
+#### Added
+
+- `sharedWorker` option, [#1207](https://github.com/whitphx/stlite/pull/1207).
+
+## [0.74.0] - 2025-01-05
+
+### `@stlite/kernel`
+
+#### Added
+
+- Experimental SharedWorker mode, [#1193](https://github.com/whitphx/stlite/pull/1193).
+
+## [0.73.1] - 2024-12-21
+
+### `@stlite/kernel`
+
+#### Fixed
+
+- Fix `st.download_button` to work properly with non-ASCII file names, [#1192](https://github.com/whitphx/stlite/pull/1192).
+
+## [0.73.0] - 2024-11-18
+
+### General
+
+#### Changed
+
+- Update Streamlit to 1.40.1, [#1187](https://github.com/whitphx/stlite/pull/1187).
+
+## [0.72.1] - 2024-10-18
+
+### `@stlite/kernel`
+
+#### Added
+
+- Refactoring the module auto loader, [#1176](https://github.com/whitphx/stlite/pull/1176).
+
+## [0.72.0] - 2024-10-17
+
+### `@stlite/kernel`
+
+#### Added
+
+- AST modification from `asyncio.run(awaitable)` to `await awaitable`, [#1175](https://github.com/whitphx/stlite/pull/1175).
+
+## [0.71.0] - 2024-10-18
+
+### `@stlite/mountable`
+
+#### Added
+
+- Custom element syntax, [#1150](https://github.com/whitphx/stlite/pull/1150).
+
+## [0.70.0] - 2024-10-17
+
+### `@stlite/kernel`
+
+#### Fixed
+
+- Update the AST transformer to handle the target function calls in assignments, [#1167](https://github.com/whitphx/stlite/pull/1167).
+
+### `@stlite/desktop`
+
+#### Fixed
+
+- Set the Content Security Policy properly, [#1168](https://github.com/whitphx/stlite/pull/1168).
+- Use `protocol.handle` instead of the deprecated method `protocol.registerFileProtocol`, [#1165](https://github.com/whitphx/stlite/pull/1165).
+- Update Electron for dev, [#1166](https://github.com/whitphx/stlite/pull/1166).
+
+## [0.69.2] - 2024-10-12
+
+### General
+
+#### Fixed
+
+- Improve the build pipelines.
+- Internal package updates.
+
+## [0.69.1] - 2024-10-11
+
+### `@stlite/kernel`
+
+#### Fixed
+
+- Remove `*.pyi` files from the Streamlit wheel, [#1154](https://github.com/whitphx/stlite/pull/1154).
 
 ## [0.69.0] - 2024-10-09
 

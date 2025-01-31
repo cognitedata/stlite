@@ -10,7 +10,7 @@
 
 const workerBlobUrlCache = new Map<string, string>();
 
-function getWorkerBlobUrl(url: URL): string {
+function getWorkerBlobUrl(url: URL, isModule = false): string {
   const urlStr = url.toString();
 
   const cached = workerBlobUrlCache.get(urlStr);
@@ -19,8 +19,12 @@ function getWorkerBlobUrl(url: URL): string {
     return cached;
   }
 
-  const workerBlob = new Blob([`importScripts("${urlStr}");`], {
-    type: "text/javascript",
+  const workerCode = isModule
+    ? `import "${urlStr}";`
+    : `importScripts("${urlStr}");`;
+
+  const workerBlob = new Blob([workerCode], {
+    type: isModule ? "text/javascript;type=module" : "text/javascript",
   });
   const workerBlobUrl = URL.createObjectURL(workerBlob);
   workerBlobUrlCache.set(urlStr, workerBlobUrl);
@@ -32,14 +36,19 @@ function isSameOrigin(url: URL): boolean {
 }
 
 export class CrossOriginWorkerMaker {
-  public readonly worker: Worker;
+  public readonly worker: Worker | SharedWorker;
 
-  constructor(url: URL) {
+  constructor(
+    url: URL,
+    { shared, ...workerOptions }: { shared: boolean } & WorkerOptions,
+  ) {
     if (isSameOrigin(url)) {
       console.debug(`Loading a worker script from the same origin: ${url}`);
 
       // This is the normal way to load a worker script, which is the best straightforward if possible.
-      this.worker = new Worker(url);
+      this.worker = shared
+        ? new SharedWorker(url, workerOptions)
+        : new Worker(url, workerOptions);
 
       // NOTE: We use here `if-else` checking the origin instead of `try-catch`
       // because the `try-catch` approach doesn't work on some browsers like FireFox.
@@ -47,8 +56,13 @@ export class CrossOriginWorkerMaker {
       // so we can't catch the error synchronously.
     } else {
       console.debug(`Loading a worker script from a different origin: ${url}`);
-      const workerBlobUrl = getWorkerBlobUrl(url);
-      this.worker = new Worker(workerBlobUrl);
+      const workerBlobUrl = getWorkerBlobUrl(
+        url,
+        workerOptions.type === "module",
+      );
+      this.worker = shared
+        ? new SharedWorker(workerBlobUrl, workerOptions)
+        : new Worker(workerBlobUrl, workerOptions);
     }
   }
 }
