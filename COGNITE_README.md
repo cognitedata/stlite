@@ -34,7 +34,7 @@ that fullfils this requirement, so all attempts have failed. Feel free to help o
 
 For general development instructions, see [DEVELOPMENT.md](DEVELOPMENT.md). In addition, you need to have set up JFROG for private packages:
 
-TL;DR: make sure you have the right environment and run `USE_CONSTRAINTS_FILE=false make mountable`.
+TL;DR: make sure you have the right environment and run `NODE_OPTIONS=--max_old_space_size=16384 USE_CONSTRAINTS_FILE=false make browser`.
 
 ### JFROG Authentication
 
