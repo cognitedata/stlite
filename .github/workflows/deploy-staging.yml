@@ -6,22 +6,22 @@ on:
       - main
 
 env:
-  GITHUB_PAGES_SUBDIR_MOUNTABLE: lib/mountable
+  GITHUB_PAGES_SUBDIR_BROWSER: lib/browser
   USE_CONSTRAINTS_FILE: false # https://github.com/streamlit/streamlit/blob/1.27.0/.github/workflows/release.yml#L67-L68
 
 jobs:
   build:
     strategy:
       matrix:
-        target: ["mountable"]
+        target: ["browser"]
 
     env:
-      python-version: "3.12.1"
+      python-version: "3.12.7"
       # To avoid an error like "FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory".
       # See https://github.com/actions/virtual-environments/issues/70#issuecomment-653886422
       # The Linux VM has 7GB RAM (https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources),
       # so we set the max memory size as 6.5 GiB like https://nodejs.org/api/cli.html#--max-old-space-sizesize-in-megabytes
-      NODE_OPTIONS: "--max-old-space-size=6656"
+      NODE_OPTIONS: "--max-old-space-size=16384"
 
     runs-on: ubuntu-latest
 
@@ -88,27 +88,27 @@ jobs:
       - name: Set up
         run: make init
 
-      ## Build and deploy @stlite/mountable
+      ## Build and deploy @stlite/browser
       # PUBLIC_URL here is set as a relative path, which is possible to the trick introduced at https://github.com/whitphx/stlite/pull/143.
-      - if: matrix.target == 'mountable'
+      - if: matrix.target == 'browser'
         name: Set PUBLIC_URL
         run: echo "PUBLIC_URL=." >> $GITHUB_ENV
 
-      - if: matrix.target == 'mountable'
-        name: Build @stlite/mountable
+      - if: matrix.target == 'browser'
+        name: Build @stlite/browser
         run: |
           . .venv/bin/activate
           make mountable
 
-      - if: matrix.target == 'mountable'
+      - if: matrix.target == 'browser'
         name: Copy firebase.json
-        run: cp firebase.json packages/mountable/build/
-      - if: matrix.target == 'mountable'
+        run: cp firebase.json packages/browser/build/
+      - if: matrix.target == 'browser'
         name: Upload the built files as an artifact
         uses: actions/upload-artifact@v3
         with:
-          name: stlite-mountable
-          path: packages/mountable/build
+          name: stlite-browser
+          path: packages/browser/build
 
   deploy:
     environment: CD
@@ -125,14 +125,14 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: stlite-mountable
-          path: mountable
+          name: stlite-browser
+          path: browser
       - name: Copy firebase.json to the root directory
         run: |
-          cp -r ./mountable/firebase.json $(pwd)
+          cp -r ./browser/firebase.json $(pwd)
       - name: Rename the manifest file
         run: |
-          mv ./mountable/asset-manifest.json ./mountable/manifest.json
+          mv ./browser/asset-manifest.json ./browser/manifest.json
       # Deploying to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
