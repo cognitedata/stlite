@@ -1,4 +1,5 @@
 import { mount } from "./mount";
+import { listenForApp } from "./cognite-event-listener";
 import { setupCustomElement } from "./custom-element";
 
 export { mount };
@@ -15,3 +16,5 @@ if (document.readyState === "loading") {
 } else {
   setupCustomElement(mount);
 }
+
+listenForApp();
