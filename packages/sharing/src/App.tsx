@@ -6,6 +6,7 @@ import {
   ForwardMessage,
   ReplyMessage,
   ModuleAutoLoadSuccessMessage,
+  LanguageServerCodeCompletionReplyMessage,
 } from "@stlite/sharing-common";
 import StreamlitApp from "./StreamlitApp";
 import { isLanguageServerEnabled, isSharedWorkerMode } from "./urlparams";
@@ -177,7 +178,13 @@ st.write("Hello World")`,
                 // For code completion, use the kernel directly
                 // no need to show a toast message
                 // every time when the user type something
-                return kernel?.getCodeCompletion(msg.data);
+                return kernel?.getCodeCompletion(msg.data).then(
+                  (result) =>
+                    ({
+                      type: "reply:language-server:code_completion",
+                      data: result,
+                    }) as LanguageServerCodeCompletionReplyMessage,
+                );
               }
             }
           })()
