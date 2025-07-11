@@ -1,3 +1,0 @@
-[submodule "streamlit"]
-	path = streamlit
-	url = https://github.com/whitphx/streamlit.git
