@@ -1,4 +1,4 @@
-# Stlite: In-browser Streamlit
+# Stlite: In-browser Streamlit 
 
 **Serverless [Streamlit](https://streamlit.io/) Running Entirely in Your Browser**
 
