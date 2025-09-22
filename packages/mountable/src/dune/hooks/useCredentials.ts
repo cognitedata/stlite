@@ -1,10 +1,5 @@
 import { useState, useEffect } from "react";
-
-export interface Credentials {
-  token: string;
-  project: string;
-  baseUrl: string;
-}
+import { Credentials } from "../types";
 
 /**
  * Hook to handle receiving credentials from Fusion framework

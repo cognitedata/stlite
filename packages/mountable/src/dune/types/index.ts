@@ -1,4 +1,5 @@
 export type {
+  Credentials,
   AppReadyMessage,
   RequestCredentialsMessage,
   CredentialsMessage,

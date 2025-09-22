@@ -1,7 +1,6 @@
 import { useRef, useEffect } from "react";
-import { Credentials } from "./useCredentials";
 import { MESSAGE_TYPES } from "../constants";
-import { CredentialsMessage, IncomingMessage } from "../types/messages";
+import { Credentials, CredentialsMessage, IncomingMessage } from "../types";
 
 /**
  * Hook to handle iframe credential communication

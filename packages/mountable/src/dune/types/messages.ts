@@ -1,5 +1,13 @@
 import { MESSAGE_TYPES } from "../constants";
-import { Credentials } from "../hooks/useCredentials";
+
+/**
+ * Credentials interface for authentication
+ */
+export interface Credentials {
+  token: string;
+  project: string;
+  baseUrl: string;
+}
 
 /**
  * Message sent from iframe when it's ready to receive credentials
