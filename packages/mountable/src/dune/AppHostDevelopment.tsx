@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { useCredentials } from "./useCredentials";
+import { useCredentials } from "./hooks/useCredentials";
 import { useIframeCommunication } from "./hooks/useIframeCommunication";
 import { LoadingState } from "./components/LoadingState";
 

@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { Credentials } from "../useCredentials";
+import { Credentials } from "./useCredentials";
 
 /**
  * Hook to handle iframe communication for passing credentials

@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { useCredentials } from "./useCredentials";
+import { useCredentials } from "./hooks/useCredentials";
 
 /**
  * Component for the /dune route - handles Fusion integration
