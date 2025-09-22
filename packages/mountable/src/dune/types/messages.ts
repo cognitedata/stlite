@@ -26,7 +26,7 @@ export interface RequestCredentialsMessage {
 /**
  * Message sent to iframe containing credentials
  */
-export interface CredentialsMessage {
+export interface ProvideCredentialsMessage {
   type: typeof MESSAGE_TYPES.PROVIDE_CREDENTIALS;
   credentials: Credentials;
 }
@@ -39,4 +39,4 @@ export type IncomingMessage = AppReadyMessage | RequestCredentialsMessage;
 /**
  * Union type for all outgoing messages to iframe
  */
-export type OutgoingMessage = CredentialsMessage;
+export type OutgoingMessage = ProvideCredentialsMessage;

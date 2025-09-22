@@ -1,6 +1,10 @@
 import { useRef, useEffect } from "react";
 import { MESSAGE_TYPES } from "../constants";
-import { Credentials, CredentialsMessage, IncomingMessage } from "../types";
+import {
+  Credentials,
+  ProvideCredentialsMessage,
+  IncomingMessage,
+} from "../types";
 
 /**
  * Hook to handle iframe credential communication
@@ -27,7 +31,7 @@ export const useIframeCredentials = (
       }
 
       try {
-        const message: CredentialsMessage = {
+        const message: ProvideCredentialsMessage = {
           type: MESSAGE_TYPES.PROVIDE_CREDENTIALS,
           credentials: {
             token: credentials.token,

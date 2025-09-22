@@ -2,7 +2,7 @@ export type {
   Credentials,
   AppReadyMessage,
   RequestCredentialsMessage,
-  CredentialsMessage,
+  ProvideCredentialsMessage,
   IncomingMessage,
   OutgoingMessage,
 } from "./messages";
