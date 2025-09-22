@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { useCredentials } from "./hooks/useCredentials";
+import { useCredentials } from "./hooks";
 
 /**
  * Component for the /dune route - handles Fusion integration
@@ -33,18 +33,7 @@ export const AppWithCredentials: React.FC = () => {
     );
   }
 
-  // Production mode: for now, just display credentials (future: AppHost for production)
-  return <ProductionDebugView appId={appId} credentials={credentials} />;
-};
-
-/**
- * Temporary debug view for production mode
- * Will be replaced with AppHost in future PR
- */
-const ProductionDebugView: React.FC<{
-  appId?: string;
-  credentials: { project: string; baseUrl: string; token: string };
-}> = ({ appId, credentials }) => {
+  // Display received credentials
   return (
     <div
       style={{
