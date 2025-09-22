@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { StreamlitLegacy } from "./StreamlitLegacy";
+import AppWithCredentials from "./dune/AppWithCredentials";
 
 /**
  * Landing component with router
@@ -11,6 +12,7 @@ const Landing: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/:appId" element={<AppWithCredentials />} />
         <Route path="/" element={<StreamlitLegacy />} />
       </Routes>
     </BrowserRouter>
