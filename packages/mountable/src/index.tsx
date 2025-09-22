@@ -3,15 +3,17 @@ import ReactDOM from "react-dom";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { StreamlitLegacy } from "./StreamlitLegacy";
 import AppWithCredentials from "./dune/AppWithCredentials";
+import AppHostDevelopment from "./dune/AppHostDevelopment";
 
 /**
  * Landing component with router
- * Routes to either AppWithCredentials for /:appId paths or StreamlitLegacy for root
+ * Routes to either AppHostDevelopment for development, AppWithCredentials for production apps, or StreamlitLegacy for root
  */
 const Landing: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/development/:port" element={<AppHostDevelopment />} />
         <Route path="/:appId" element={<AppWithCredentials />} />
         <Route path="/" element={<StreamlitLegacy />} />
       </Routes>

@@ -33,7 +33,18 @@ export const AppWithCredentials: React.FC = () => {
     );
   }
 
-  // Display received credentials
+  // Production mode: for now, just display credentials (future: AppHost for production)
+  return <ProductionDebugView appId={appId} credentials={credentials} />;
+};
+
+/**
+ * Temporary debug view for production mode
+ * Will be replaced with AppHost in future PR
+ */
+const ProductionDebugView: React.FC<{
+  appId?: string;
+  credentials: { project: string; baseUrl: string; token: string };
+}> = ({ appId, credentials }) => {
   return (
     <div
       style={{
