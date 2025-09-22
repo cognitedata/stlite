@@ -1,4 +1,5 @@
 import React from "react";
+import { useParams } from "react-router-dom";
 import { useCredentials } from "./useCredentials";
 
 /**
@@ -6,6 +7,7 @@ import { useCredentials } from "./useCredentials";
  * Sends app ready signal and receives credentials from Fusion
  */
 export const AppWithCredentials: React.FC = () => {
+  const { appId } = useParams<{ appId: string }>();
   const { credentials } = useCredentials();
 
   // Show loading state while waiting for credentials from Fusion
@@ -53,6 +55,9 @@ export const AppWithCredentials: React.FC = () => {
         </p>
         <p>
           <strong>Base URL:</strong> {credentials.baseUrl}
+        </p>
+        <p>
+          <strong>App ID:</strong> {appId}
         </p>
         <p>
           <strong>Bearer Token:</strong>
