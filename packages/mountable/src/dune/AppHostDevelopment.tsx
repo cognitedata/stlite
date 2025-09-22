@@ -1,7 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useCredentials, useIframeCredentials } from "./hooks";
-import { LoadingState } from "./components/LoadingState";
 
 /**
  * App host component for development mode
@@ -24,7 +23,21 @@ export const AppHostDevelopment: React.FC = () => {
 
   // Wait for credentials from Fusion
   if (!credentials) {
-    return <LoadingState message="Waiting for credentials from Fusion..." />;
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          fontSize: "16px",
+          color: "#666",
+          fontFamily: "sans-serif",
+        }}
+      >
+        Waiting for credentials from Fusion...
+      </div>
+    );
   }
 
   const iframeSrc = `http://localhost:${port}`;
