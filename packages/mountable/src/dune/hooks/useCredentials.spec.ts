@@ -1,7 +1,7 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 
-import { useCredentials, Credentials } from "./hooks/useCredentials";
+import { useCredentials, Credentials } from "./useCredentials";
 
 // Type for the hook return value
 type UseCredentialsReturn = {

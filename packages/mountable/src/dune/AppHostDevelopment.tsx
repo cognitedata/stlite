@@ -1,7 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { useCredentials } from "./hooks/useCredentials";
-import { useIframeCommunication } from "./hooks/useIframeCommunication";
+import { useCredentials, useIframeCredentials } from "./hooks";
 import { LoadingState } from "./components/LoadingState";
 
 /**
@@ -12,16 +11,20 @@ import { LoadingState } from "./components/LoadingState";
 export const AppHostDevelopment: React.FC = () => {
   const { port } = useParams<{ port: string }>();
   const { credentials } = useCredentials();
-  const { iframeRef } = useIframeCommunication(credentials);
+
+  // Setup iframe communication (must be called before any conditional returns)
+  // In development mode, we MUST have a port
+  if (!port) {
+    throw new Error(
+      "AppHostDevelopment requires a port parameter - this should never happen!",
+    );
+  }
+  const targetOrigin = `http://localhost:${port}`;
+  const { iframeRef } = useIframeCredentials(credentials, targetOrigin);
 
   // Wait for credentials from Fusion
   if (!credentials) {
     return <LoadingState message="Waiting for credentials from Fusion..." />;
-  }
-
-  // Load from localhost:port
-  if (!port) {
-    return <div>Error: No port specified for development mode</div>;
   }
 
   const iframeSrc = `http://localhost:${port}`;

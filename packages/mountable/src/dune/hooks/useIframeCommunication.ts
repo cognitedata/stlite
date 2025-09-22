@@ -1,11 +1,16 @@
 import { useRef, useEffect } from "react";
 import { Credentials } from "./useCredentials";
+import { MESSAGE_TYPES } from "../constants";
+import { CredentialsMessage, IncomingMessage } from "../types/messages";
 
 /**
- * Hook to handle iframe communication for passing credentials
- * Handles the token exchange pattern with the app inside the iframe
+ * Hook to handle iframe credential communication
+ * Manages secure credential exchange between the host and iframe application
  */
-export const useIframeCommunication = (credentials: Credentials | null) => {
+export const useIframeCredentials = (
+  credentials: Credentials | null,
+  targetOrigin: string,
+) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -13,42 +18,67 @@ export const useIframeCommunication = (credentials: Credentials | null) => {
       return;
     }
 
-    const handleMessage = (event: MessageEvent) => {
-      // Listen for messages from the iframe requesting credentials
-      if (
-        event.data?.type === "APP_READY" ||
-        event.data?.type === "REQUEST_CREDENTIALS"
-      ) {
-        if (iframeRef.current?.contentWindow) {
-          const message = {
-            type: "CREDENTIALS",
-            credentials: {
-              token: credentials.token,
-              project: credentials.project,
-              baseUrl: credentials.baseUrl,
-            },
-          };
-          iframeRef.current.contentWindow.postMessage(message, "*");
-        }
+    /**
+     * Send credentials to iframe with error handling
+     * Defined inside effect to avoid dependency issues
+     */
+    const sendCredentials = () => {
+      if (!credentials || !iframeRef.current?.contentWindow) {
+        return;
       }
-    };
 
-    // Listen for messages from iframe
-    window.addEventListener("message", handleMessage);
-
-    // Send credentials once iframe loads
-    const handleIframeLoad = () => {
-      if (iframeRef.current?.contentWindow) {
-        const message = {
-          type: "CREDENTIALS",
+      try {
+        const message: CredentialsMessage = {
+          type: MESSAGE_TYPES.PROVIDE_CREDENTIALS,
           credentials: {
             token: credentials.token,
             project: credentials.project,
             baseUrl: credentials.baseUrl,
           },
         };
-        iframeRef.current.contentWindow.postMessage(message, "*");
+        // TODO: Security consideration - using specific targetOrigin instead of '*'
+        // This prevents credentials from being sent to unintended recipients
+        iframeRef.current.contentWindow.postMessage(message, targetOrigin);
+      } catch (error) {
+        console.error("Failed to send credentials to iframe:", error);
       }
+    };
+
+    const handleMessage = (event: MessageEvent) => {
+      // Filter out noise messages from setImmediate and other sources
+      if (
+        typeof event.data === "string" &&
+        event.data.startsWith("setImmediate")
+      ) {
+        return;
+      }
+
+      // Validate origin for security - must match our expected targetOrigin
+      if (event.origin !== targetOrigin) {
+        console.warn(
+          `Ignoring message from untrusted origin: ${event.origin}, expected: ${targetOrigin}`,
+        );
+        return;
+      }
+
+      // Type guard for incoming messages
+      const message = event.data as IncomingMessage;
+
+      // Handle credential requests from iframe
+      if (
+        message?.type === MESSAGE_TYPES.APP_READY ||
+        message?.type === MESSAGE_TYPES.REQUEST_CREDENTIALS
+      ) {
+        sendCredentials();
+      }
+    };
+
+    // Listen for messages from iframe
+    window.addEventListener("message", handleMessage);
+
+    // Send credentials when iframe loads
+    const handleIframeLoad = () => {
+      sendCredentials();
     };
 
     // Add load event listener
@@ -64,7 +94,7 @@ export const useIframeCommunication = (credentials: Credentials | null) => {
         iframe.removeEventListener("load", handleIframeLoad);
       }
     };
-  }, [credentials]);
+  }, [credentials, targetOrigin]);
 
   return { iframeRef };
 };
