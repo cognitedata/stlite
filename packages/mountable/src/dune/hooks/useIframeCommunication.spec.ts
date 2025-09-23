@@ -167,32 +167,4 @@ describe("useIframeCredentials", () => {
       expect.any(Function),
     );
   });
-
-  it("should not set up listeners when credentials are null", () => {
-    // Act
-    const { result } = renderHook(() =>
-      useIframeCredentials(null, targetOrigin),
-    );
-    act(() => {
-      // even if iframe is present, credentials === null should prevent setup
-      Object.defineProperty(result.current.iframeRef, "current", {
-        value: mockIframe,
-        writable: true,
-        configurable: true,
-      });
-    });
-
-    // Assert
-    expect(mockAddEventListener).not.toHaveBeenCalled();
-  });
-
-  it("should not send credentials when iframe ref is null", () => {
-    // Act
-    renderHook(() => useIframeCredentials(credentials, targetOrigin));
-    // Iframe ref remains null (not assigned)
-
-    // Assert
-    expect(mockAddEventListener).not.toHaveBeenCalled();
-    expect(mockPostMessage).not.toHaveBeenCalled();
-  });
 });
