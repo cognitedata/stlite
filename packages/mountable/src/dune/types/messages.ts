@@ -2,7 +2,7 @@
  * Message types for iframe communication
  */
 export const MESSAGE_TYPES = {
-  APP_READY: "APP_READY",
+  REQUEST_CREDENTIALS: "REQUEST_CREDENTIALS",
   PROVIDE_CREDENTIALS: "PROVIDE_CREDENTIALS",
 } as const;
 
@@ -24,7 +24,7 @@ export interface Credentials {
  * Message sent from iframe when it's ready to receive credentials
  */
 export interface AppReadyMessage {
-  type: typeof MESSAGE_TYPES.APP_READY;
+  type: typeof MESSAGE_TYPES.REQUEST_CREDENTIALS;
 }
 
 /**

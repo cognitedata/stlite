@@ -75,7 +75,7 @@ describe("useIframeCredentials", () => {
     );
   });
 
-  it("should send credentials when receiving APP_READY message", () => {
+  it("should send credentials when receiving REQUEST_CREDENTIALS message", () => {
     // Act
     const { result, rerender } = renderHook(
       ({ creds, origin }) => useIframeCredentials(creds, origin),
@@ -92,7 +92,7 @@ describe("useIframeCredentials", () => {
       window.dispatchEvent(
         new MessageEvent("message", {
           origin: targetOrigin,
-          data: { type: MESSAGE_TYPES.APP_READY },
+          data: { type: MESSAGE_TYPES.REQUEST_CREDENTIALS },
         }),
       );
     });
@@ -127,7 +127,7 @@ describe("useIframeCredentials", () => {
       window.dispatchEvent(
         new MessageEvent("message", {
           origin: untrustedOrigin,
-          data: { type: MESSAGE_TYPES.APP_READY },
+          data: { type: MESSAGE_TYPES.REQUEST_CREDENTIALS },
         }),
       );
     });

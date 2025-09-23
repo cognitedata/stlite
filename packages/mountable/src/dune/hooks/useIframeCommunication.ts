@@ -66,8 +66,8 @@ export const useIframeCredentials = (
       // Type guard for incoming messages
       const message = event.data as IncomingMessage;
 
-      // Handle APP_READY message from iframe
-      if (message?.type === MESSAGE_TYPES.APP_READY) {
+      // Handle REQUEST_CREDENTIALS message from iframe
+      if (message?.type === MESSAGE_TYPES.REQUEST_CREDENTIALS) {
         sendCredentials();
       }
     };
