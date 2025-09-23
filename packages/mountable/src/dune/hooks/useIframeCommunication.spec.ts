@@ -142,39 +142,8 @@ describe("useIframeCredentials", () => {
     expect(mockPostMessage).not.toHaveBeenCalled();
   });
 
-  it("should send credentials on iframe load event", () => {
-    // Act
-    const { result, rerender } = renderHook(
-      ({ creds, origin }) => useIframeCredentials(creds, origin),
-      { initialProps: { creds: credentials, origin: targetOrigin } },
-    );
-    act(() => {
-      Object.defineProperty(result.current.iframeRef, "current", {
-        value: mockIframe,
-        writable: true,
-        configurable: true,
-      });
-    });
-    // Force effect to see the ref by changing props identity
-    rerender({ creds: { ...credentials }, origin: targetOrigin });
-    act(() => {
-      mockIframe.dispatchEvent(new Event("load"));
-    });
-
-    // Assert
-    expect(mockPostMessage).toHaveBeenCalledWith(
-      {
-        type: MESSAGE_TYPES.PROVIDE_CREDENTIALS,
-        credentials,
-      },
-      targetOrigin,
-    );
-  });
-
   it("should remove event listeners on unmount", () => {
-    // Arrange
-    const removeIframeSpy = jest.spyOn(mockIframe, "removeEventListener");
-
+    // Act
     const { result, rerender, unmount } = renderHook(
       ({ creds, origin }) => useIframeCredentials(creds, origin),
       { initialProps: { creds: credentials, origin: targetOrigin } },
@@ -197,7 +166,6 @@ describe("useIframeCredentials", () => {
       "message",
       expect.any(Function),
     );
-    expect(removeIframeSpy).toHaveBeenCalledWith("load", expect.any(Function));
   });
 
   it("should not set up listeners when credentials are null", () => {

@@ -75,23 +75,9 @@ export const useIframeCredentials = (
     // Listen for messages from iframe
     window.addEventListener("message", handleMessage);
 
-    // Send credentials when iframe loads
-    const handleIframeLoad = () => {
-      sendCredentials();
-    };
-
-    // Add load event listener
-    const iframe = iframeRef.current;
-    if (iframe) {
-      iframe.addEventListener("load", handleIframeLoad);
-    }
-
     // Cleanup
     return () => {
       window.removeEventListener("message", handleMessage);
-      if (iframe) {
-        iframe.removeEventListener("load", handleIframeLoad);
-      }
     };
   }, [credentials, targetOrigin]);
 
