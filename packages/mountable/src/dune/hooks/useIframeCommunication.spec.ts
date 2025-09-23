@@ -5,14 +5,6 @@ import { useIframeCredentials } from "./useIframeCommunication";
 import { Credentials } from "../types";
 import { MESSAGE_TYPES } from "../types/messages";
 
-// Mock React.useRef before the hook module is imported
-jest.mock("react", () => ({
-  ...jest.requireActual("react"),
-  useRef: jest.fn(),
-}));
-
-const React = require("react");
-
 describe("useIframeCredentials", () => {
   let mockAddEventListener: jest.SpyInstance<
     void,
@@ -24,7 +16,6 @@ describe("useIframeCredentials", () => {
   >;
   let mockIframe: HTMLIFrameElement;
   let mockPostMessage: jest.MockedFunction<Window["postMessage"]>;
-  let mockRef: { current: HTMLIFrameElement | null };
 
   const credentials: Credentials = {
     token: "test-bearer-token-123",
@@ -46,10 +37,6 @@ describe("useIframeCredentials", () => {
       value: { postMessage: mockPostMessage },
       configurable: true,
     });
-
-    // Setup controlled ref
-    mockRef = { current: null };
-    React.useRef.mockReturnValue(mockRef);
   });
 
   afterEach(() => {
@@ -57,10 +44,6 @@ describe("useIframeCredentials", () => {
   });
 
   it("should return an iframe ref initialized as null", () => {
-    // Arrange
-    const testRef = { current: null };
-    React.useRef.mockReturnValue(testRef);
-
     // Act
     const { result } = renderHook(() =>
       useIframeCredentials(credentials, targetOrigin),
@@ -72,11 +55,20 @@ describe("useIframeCredentials", () => {
   });
 
   it("should set up message event listener when credentials and iframe are provided", () => {
-    // Arrange
-    mockRef.current = mockIframe;
-
     // Act
-    renderHook(() => useIframeCredentials(credentials, targetOrigin));
+    const { result, rerender } = renderHook(
+      ({ creds, origin }) => useIframeCredentials(creds, origin),
+      { initialProps: { creds: credentials, origin: targetOrigin } },
+    );
+    act(() => {
+      Object.defineProperty(result.current.iframeRef, "current", {
+        value: mockIframe,
+        writable: true,
+        configurable: true,
+      });
+    });
+    // Force effect to see the ref by changing props identity
+    rerender({ creds: { ...credentials }, origin: targetOrigin });
 
     // Assert
     expect(mockAddEventListener).toHaveBeenCalledWith(
@@ -86,22 +78,28 @@ describe("useIframeCredentials", () => {
   });
 
   it("should send credentials when receiving APP_READY message", () => {
-    // Arrange
-    mockRef.current = mockIframe;
-
-    mockAddEventListener.mockImplementation((type, listener) => {
-      if (type === "message" && typeof listener === "function") {
-        listener(
-          new MessageEvent("message", {
-            origin: targetOrigin,
-            data: { type: MESSAGE_TYPES.APP_READY },
-          }),
-        );
-      }
-    });
-
     // Act
-    renderHook(() => useIframeCredentials(credentials, targetOrigin));
+    const { result, rerender } = renderHook(
+      ({ creds, origin }) => useIframeCredentials(creds, origin),
+      { initialProps: { creds: credentials, origin: targetOrigin } },
+    );
+    act(() => {
+      Object.defineProperty(result.current.iframeRef, "current", {
+        value: mockIframe,
+        writable: true,
+        configurable: true,
+      });
+    });
+    // Force effect to see the ref by changing props identity
+    rerender({ creds: { ...credentials }, origin: targetOrigin });
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: targetOrigin,
+          data: { type: MESSAGE_TYPES.APP_READY },
+        }),
+      );
+    });
 
     // Assert
     expect(mockPostMessage).toHaveBeenCalledWith(
@@ -116,23 +114,30 @@ describe("useIframeCredentials", () => {
   it("should ignore messages from untrusted origin", () => {
     // Arrange
     const untrustedOrigin = "https://evil.example.test";
-    mockRef.current = mockIframe;
-
     jest.spyOn(console, "warn").mockImplementation();
 
-    mockAddEventListener.mockImplementation((type, listener) => {
-      if (type === "message" && typeof listener === "function") {
-        listener(
-          new MessageEvent("message", {
-            origin: untrustedOrigin,
-            data: { type: MESSAGE_TYPES.APP_READY },
-          }),
-        );
-      }
-    });
-
     // Act
-    renderHook(() => useIframeCredentials(credentials, targetOrigin));
+    const { result, rerender } = renderHook(
+      ({ creds, origin }) => useIframeCredentials(creds, origin),
+      { initialProps: { creds: credentials, origin: targetOrigin } },
+    );
+    act(() => {
+      Object.defineProperty(result.current.iframeRef, "current", {
+        value: mockIframe,
+        writable: true,
+        configurable: true,
+      });
+    });
+    // Force effect to see the ref by changing props identity
+    rerender({ creds: { ...credentials }, origin: targetOrigin });
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent("message", {
+          origin: untrustedOrigin,
+          data: { type: MESSAGE_TYPES.APP_READY },
+        }),
+      );
+    });
 
     // Assert
     expect(mockPostMessage).not.toHaveBeenCalled();
@@ -142,20 +147,22 @@ describe("useIframeCredentials", () => {
   });
 
   it("should send credentials on iframe load event", () => {
-    // Arrange
-    mockRef.current = mockIframe;
-    mockIframe.addEventListener = jest.fn();
-
     // Act
-    renderHook(() => useIframeCredentials(credentials, targetOrigin));
-
-    // Simulate iframe load event
-    const loadHandler = (
-      mockIframe.addEventListener as jest.Mock
-    ).mock.calls.find(([type]) => type === "load")?.[1];
-
+    const { result, rerender } = renderHook(
+      ({ creds, origin }) => useIframeCredentials(creds, origin),
+      { initialProps: { creds: credentials, origin: targetOrigin } },
+    );
     act(() => {
-      loadHandler?.();
+      Object.defineProperty(result.current.iframeRef, "current", {
+        value: mockIframe,
+        writable: true,
+        configurable: true,
+      });
+    });
+    // Force effect to see the ref by changing props identity
+    rerender({ creds: { ...credentials }, origin: targetOrigin });
+    act(() => {
+      mockIframe.dispatchEvent(new Event("load"));
     });
 
     // Assert
@@ -170,13 +177,21 @@ describe("useIframeCredentials", () => {
 
   it("should remove event listeners on unmount", () => {
     // Arrange
-    mockRef.current = mockIframe;
-    mockIframe.addEventListener = jest.fn();
-    mockIframe.removeEventListener = jest.fn();
+    const removeIframeSpy = jest.spyOn(mockIframe, "removeEventListener");
 
-    const { unmount } = renderHook(() =>
-      useIframeCredentials(credentials, targetOrigin),
+    const { result, rerender, unmount } = renderHook(
+      ({ creds, origin }) => useIframeCredentials(creds, origin),
+      { initialProps: { creds: credentials, origin: targetOrigin } },
     );
+    act(() => {
+      Object.defineProperty(result.current.iframeRef, "current", {
+        value: mockIframe,
+        writable: true,
+        configurable: true,
+      });
+    });
+    // Force effect to see the ref by changing props identity
+    rerender({ creds: { ...credentials }, origin: targetOrigin });
 
     // Act
     unmount();
@@ -186,30 +201,31 @@ describe("useIframeCredentials", () => {
       "message",
       expect.any(Function),
     );
-    expect(mockIframe.removeEventListener).toHaveBeenCalledWith(
-      "load",
-      expect.any(Function),
-    );
+    expect(removeIframeSpy).toHaveBeenCalledWith("load", expect.any(Function));
   });
 
   it("should not set up listeners when credentials are null", () => {
-    // Arrange
-    const testRef = { current: null };
-    React.useRef.mockReturnValue(testRef);
-
     // Act
-    renderHook(() => useIframeCredentials(null, targetOrigin));
+    const { result } = renderHook(() =>
+      useIframeCredentials(null, targetOrigin),
+    );
+    act(() => {
+      // even if iframe is present, credentials === null should prevent setup
+      Object.defineProperty(result.current.iframeRef, "current", {
+        value: mockIframe,
+        writable: true,
+        configurable: true,
+      });
+    });
 
     // Assert
     expect(mockAddEventListener).not.toHaveBeenCalled();
   });
 
   it("should not send credentials when iframe ref is null", () => {
-    // Arrange
-    mockRef.current = null;
-
     // Act
     renderHook(() => useIframeCredentials(credentials, targetOrigin));
+    // Iframe ref remains null (not assigned)
 
     // Assert
     expect(mockAddEventListener).not.toHaveBeenCalled();
