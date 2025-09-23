@@ -1,10 +1,10 @@
 import { useRef, useEffect } from "react";
-import { MESSAGE_TYPES } from "../constants";
 import {
+  MESSAGE_TYPES,
   Credentials,
   ProvideCredentialsMessage,
   IncomingMessage,
-} from "../types";
+} from "../types/messages";
 
 /**
  * Hook to handle iframe credential communication
