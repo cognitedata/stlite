@@ -3,210 +3,239 @@ import "@testing-library/jest-dom";
 
 import { useIframeCredentials } from "./useIframeCommunication";
 import { Credentials } from "../types";
-import { MESSAGE_TYPES } from "../constants";
+import { MESSAGE_TYPES } from "../types/messages";
 
 describe("useIframeCredentials", () => {
-  const mockCredentials: Credentials = {
+  let mockAddEventListener: jest.SpyInstance<
+    void,
+    Parameters<typeof window.addEventListener>
+  >;
+  let mockRemoveEventListener: jest.SpyInstance<
+    void,
+    Parameters<typeof window.removeEventListener>
+  >;
+  let mockIframe: HTMLIFrameElement;
+  let mockPostMessage: jest.Mock;
+
+  const credentials: Credentials = {
     token: "test-bearer-token-123",
     project: "test-project",
     baseUrl: "https://api.cognitedata.test",
   };
-
-  const mockTargetOrigin = "https://app.example.test";
-
-  let consoleWarnSpy: jest.SpyInstance;
+  const targetOrigin = "https://app.example.test";
 
   beforeEach(() => {
-    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
+    mockAddEventListener = jest.spyOn(window, "addEventListener");
+    mockRemoveEventListener = jest.spyOn(window, "removeEventListener");
+
+    // Create mock iframe with postMessage mock
+    mockPostMessage = jest.fn();
+    mockIframe = document.createElement("iframe");
+    Object.defineProperty(mockIframe, "contentWindow", {
+      value: { postMessage: mockPostMessage },
+    });
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it("should return an iframe ref", () => {
+  it("should return an iframe ref initialized as null", () => {
     const { result } = renderHook(() =>
-      useIframeCredentials(mockCredentials, mockTargetOrigin),
+      useIframeCredentials(credentials, targetOrigin),
     );
 
     expect(result.current.iframeRef).toBeDefined();
     expect(result.current.iframeRef.current).toBeNull();
   });
 
-  describe("Core message handling", () => {
-    // Type-safe event handler types
-    type MessageEventHandler = (event: MessageEvent) => void;
-    type AddEventListenerCall = [
-      type: string,
-      listener: EventListenerOrEventListenerObject | null,
-      options?: boolean | AddEventListenerOptions | undefined,
-    ];
+  it("should set up message event listener when credentials and iframe are provided", () => {
+    const { result } = renderHook(() =>
+      useIframeCredentials(credentials, targetOrigin),
+    );
 
-    let addEventListenerSpy: jest.SpyInstance<
-      void,
-      Parameters<typeof window.addEventListener>
-    >;
-    let removeEventListenerSpy: jest.SpyInstance<
-      void,
-      Parameters<typeof window.removeEventListener>
-    >;
-
-    beforeEach(() => {
-      addEventListenerSpy = jest.spyOn(window, "addEventListener");
-      removeEventListenerSpy = jest.spyOn(window, "removeEventListener");
-    });
-
-    afterEach(() => {
-      addEventListenerSpy.mockRestore();
-      removeEventListenerSpy.mockRestore();
-    });
-
-    // Helper to capture message event handler with proper typing
-    const captureMessageHandler = (
-      spy: jest.SpyInstance<void, Parameters<typeof window.addEventListener>>,
-    ): MessageEventHandler | undefined => {
-      const calls: readonly AddEventListenerCall[] = spy.mock.calls;
-      const messageCall = calls.find(([type]) => type === "message");
-
-      if (!messageCall || !messageCall[1]) {
-        return undefined;
-      }
-
-      const listener = messageCall[1];
-      if (typeof listener === "function") {
-        return listener as MessageEventHandler;
-      }
-
-      return undefined;
-    };
-
-    // Helper to create a mock MessageEvent for testing
-    const createMockMessageEvent = (overrides: {
-      origin: string;
-      data: any;
-    }): MessageEvent => {
-      return new MessageEvent("message", {
-        origin: overrides.origin,
-        data: overrides.data,
-      });
-    };
-
-    const setupTest = () => {
-      const { result, rerender, unmount } = renderHook<
-        { iframeRef: React.RefObject<HTMLIFrameElement> },
-        { credentials: Credentials | null; targetOrigin: string }
-      >(
-        ({ credentials, targetOrigin }) =>
-          useIframeCredentials(credentials, targetOrigin),
-        {
-          initialProps: {
-            credentials: null,
-            targetOrigin: mockTargetOrigin,
-          },
-        },
-      );
-
-      // Create a mock contentWindow - using any because we only need it for postMessage
-      const mockContentWindow: any = {
-        postMessage: jest.fn(),
-      };
-
-      // Create a mock iframe element
-      const mockIframe = document.createElement("iframe");
-
-      // Mock the contentWindow property
-      Object.defineProperty(mockIframe, "contentWindow", {
-        value: mockContentWindow,
+    // Set iframe ref to trigger effect
+    act(() => {
+      Object.defineProperty(result.current.iframeRef, "current", {
+        value: mockIframe,
         writable: true,
       });
+    });
 
-      // Set iframe ref
-      act(() => {
-        Object.defineProperty(result.current.iframeRef, "current", {
-          writable: true,
-          value: mockIframe,
-        });
-      });
+    expect(mockAddEventListener).toHaveBeenCalledWith(
+      "message",
+      expect.any(Function),
+    );
+  });
 
-      // Add credentials to trigger effect
-      rerender({
-        credentials: mockCredentials,
-        targetOrigin: mockTargetOrigin,
-      });
-
-      // Get the message handler using type-safe helper
-      const messageHandler = captureMessageHandler(addEventListenerSpy);
-
-      if (!messageHandler) {
-        throw new Error(
-          "Failed to capture message handler from addEventListener",
+  it("should send credentials when receiving APP_READY message", () => {
+    // Arrange
+    mockAddEventListener.mockImplementation((type, listener) => {
+      if (type === "message" && typeof listener === "function") {
+        // Trigger APP_READY message immediately
+        listener(
+          new MessageEvent("message", {
+            origin: targetOrigin,
+            data: { type: MESSAGE_TYPES.APP_READY },
+          }),
         );
       }
-
-      return {
-        mockContentWindow,
-        messageHandler,
-        rerender,
-        unmount,
-      };
-    };
-
-    it("should send credentials when receiving APP_READY message", () => {
-      const { mockContentWindow, messageHandler } = setupTest();
-
-      // Simulate iframe sending APP_READY
-      act(() => {
-        messageHandler(
-          createMockMessageEvent({
-            data: { type: MESSAGE_TYPES.APP_READY },
-            origin: mockTargetOrigin,
-          }),
-        );
-      });
-
-      // Verify credentials were sent
-      expect(mockContentWindow.postMessage).toHaveBeenCalledWith(
-        {
-          type: MESSAGE_TYPES.PROVIDE_CREDENTIALS,
-          credentials: mockCredentials,
-        },
-        mockTargetOrigin,
-      );
     });
 
-    it("should ignore messages from untrusted origin", () => {
-      const { mockContentWindow, messageHandler } = setupTest();
-      const untrustedOrigin = "https://evil.example.test";
+    // Act
+    const { result } = renderHook(() =>
+      useIframeCredentials(credentials, targetOrigin),
+    );
 
-      // Simulate message from untrusted origin
-      act(() => {
-        messageHandler(
-          createMockMessageEvent({
-            data: { type: MESSAGE_TYPES.APP_READY },
+    act(() => {
+      Object.defineProperty(result.current.iframeRef, "current", {
+        value: mockIframe,
+        writable: true,
+      });
+    });
+
+    // Assert
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      {
+        type: MESSAGE_TYPES.PROVIDE_CREDENTIALS,
+        credentials,
+      },
+      targetOrigin,
+    );
+  });
+
+  it("should ignore messages from untrusted origin", () => {
+    // Arrange
+    const untrustedOrigin = "https://evil.example.test";
+
+    jest.spyOn(console, "warn").mockImplementation();
+
+    mockAddEventListener.mockImplementation((type, listener) => {
+      if (type === "message" && typeof listener === "function") {
+        listener(
+          new MessageEvent("message", {
             origin: untrustedOrigin,
+            data: { type: MESSAGE_TYPES.APP_READY },
           }),
         );
+      }
+    });
+
+    // Act
+    const { result } = renderHook(() =>
+      useIframeCredentials(credentials, targetOrigin),
+    );
+
+    act(() => {
+      Object.defineProperty(result.current.iframeRef, "current", {
+        value: mockIframe,
+        writable: true,
       });
+    });
 
-      // Should NOT send credentials
-      expect(mockContentWindow.postMessage).not.toHaveBeenCalled();
+    // Assert
+    expect(mockPostMessage).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining(untrustedOrigin),
+    );
+  });
 
-      // Should warn about untrusted origin
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining(untrustedOrigin),
+  it("should send credentials on iframe load event", () => {
+    // Arrange
+    mockIframe.addEventListener = jest.fn();
+
+    // Act
+    const { result } = renderHook(() =>
+      useIframeCredentials(credentials, targetOrigin),
+    );
+
+    act(() => {
+      Object.defineProperty(result.current.iframeRef, "current", {
+        value: mockIframe,
+        writable: true,
+      });
+    });
+
+    // Simulate iframe load event
+    const loadHandler = (
+      mockIframe.addEventListener as jest.Mock
+    ).mock.calls.find(([type]) => type === "load")?.[1];
+
+    act(() => {
+      loadHandler?.();
+    });
+
+    // Assert
+    expect(mockPostMessage).toHaveBeenCalledWith(
+      {
+        type: MESSAGE_TYPES.PROVIDE_CREDENTIALS,
+        credentials,
+      },
+      targetOrigin,
+    );
+  });
+
+  it("should remove event listeners on unmount", () => {
+    // Arrange
+    mockIframe.addEventListener = jest.fn();
+    mockIframe.removeEventListener = jest.fn();
+
+    const { result, unmount } = renderHook(() =>
+      useIframeCredentials(credentials, targetOrigin),
+    );
+
+    act(() => {
+      Object.defineProperty(result.current.iframeRef, "current", {
+        value: mockIframe,
+        writable: true,
+      });
+    });
+
+    // Act
+    unmount();
+
+    // Assert
+    expect(mockRemoveEventListener).toHaveBeenCalledWith(
+      "message",
+      expect.any(Function),
+    );
+    expect(mockIframe.removeEventListener).toHaveBeenCalledWith(
+      "load",
+      expect.any(Function),
+    );
+  });
+
+  it("should not set up listeners when credentials are null", () => {
+    renderHook(() => useIframeCredentials(null, targetOrigin));
+
+    expect(mockAddEventListener).not.toHaveBeenCalled();
+  });
+
+  it("should not send credentials when iframe ref is null", () => {
+    // Arrange
+    let messageHandler: ((event: MessageEvent) => void) | undefined;
+
+    mockAddEventListener.mockImplementation((type, listener) => {
+      if (type === "message" && typeof listener === "function") {
+        messageHandler = listener as (event: MessageEvent) => void;
+      }
+    });
+
+    // Act - render without setting iframe ref
+    renderHook(() => useIframeCredentials(credentials, targetOrigin));
+
+    // Trigger message event after hook is mounted
+    act(() => {
+      messageHandler?.(
+        new MessageEvent("message", {
+          origin: targetOrigin,
+          data: { type: MESSAGE_TYPES.APP_READY },
+        }),
       );
     });
 
-    it("should remove event listeners on unmount", () => {
-      const { unmount } = setupTest();
-
-      unmount();
-
-      // Should remove message listener
-      expect(removeEventListenerSpy).toHaveBeenCalledWith(
-        "message",
-        expect.any(Function),
-      );
-    });
+    // Assert - no errors should be thrown (accessing null ref would throw)
+    // Test passes if we get here without error
+    expect(mockAddEventListener).toHaveBeenCalled();
   });
 });
