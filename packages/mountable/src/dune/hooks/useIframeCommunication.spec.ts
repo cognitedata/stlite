@@ -1,5 +1,4 @@
 import { renderHook, act } from "@testing-library/react";
-import "@testing-library/jest-dom";
 
 import { useIframeCredentials } from "./useIframeCommunication";
 import { Credentials } from "../types";
