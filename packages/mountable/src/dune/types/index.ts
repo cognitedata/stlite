@@ -1,1 +1,7 @@
-export type { Credentials } from "./messages";
+export type {
+  Credentials,
+  AppReadyMessage,
+  ProvideCredentialsMessage,
+  IncomingMessage,
+  OutgoingMessage,
+} from "./messages";
