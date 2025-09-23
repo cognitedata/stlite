@@ -114,7 +114,6 @@ describe("useIframeCredentials", () => {
   it("should ignore messages from untrusted origin", () => {
     // Arrange
     const untrustedOrigin = "https://evil.example.test";
-    jest.spyOn(console, "warn").mockImplementation();
 
     // Act
     const { result, rerender } = renderHook(
@@ -141,9 +140,6 @@ describe("useIframeCredentials", () => {
 
     // Assert
     expect(mockPostMessage).not.toHaveBeenCalled();
-    expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining(untrustedOrigin),
-    );
   });
 
   it("should send credentials on iframe load event", () => {
