@@ -4,6 +4,7 @@ import "@testing-library/jest-dom";
 import { useIframeCredentials } from "./useIframeCommunication";
 import { Credentials } from "../types";
 import { MESSAGE_TYPES } from "../types/messages";
+import { MutableRefObject } from "react";
 
 describe("useIframeCredentials", () => {
   let mockAddEventListener: jest.SpyInstance<
@@ -33,10 +34,10 @@ describe("useIframeCredentials", () => {
       Window["postMessage"]
     >;
     mockIframe = document.createElement("iframe");
-    Object.defineProperty(mockIframe, "contentWindow", {
-      value: { postMessage: mockPostMessage },
-      configurable: true,
-    });
+    const contentWindow: Partial<Window> = { postMessage: mockPostMessage };
+    jest
+      .spyOn(mockIframe, "contentWindow", "get")
+      .mockReturnValue(contentWindow as Window);
   });
 
   afterEach(() => {
@@ -61,11 +62,9 @@ describe("useIframeCredentials", () => {
       { initialProps: { creds: credentials, origin: targetOrigin } },
     );
     act(() => {
-      Object.defineProperty(result.current.iframeRef, "current", {
-        value: mockIframe,
-        writable: true,
-        configurable: true,
-      });
+      (
+        result.current.iframeRef as MutableRefObject<HTMLIFrameElement>
+      ).current = mockIframe;
     });
     // Force effect to see the ref by changing props identity
     rerender({ creds: { ...credentials }, origin: targetOrigin });
@@ -84,11 +83,9 @@ describe("useIframeCredentials", () => {
       { initialProps: { creds: credentials, origin: targetOrigin } },
     );
     act(() => {
-      Object.defineProperty(result.current.iframeRef, "current", {
-        value: mockIframe,
-        writable: true,
-        configurable: true,
-      });
+      (
+        result.current.iframeRef as MutableRefObject<HTMLIFrameElement>
+      ).current = mockIframe;
     });
     // Force effect to see the ref by changing props identity
     rerender({ creds: { ...credentials }, origin: targetOrigin });
@@ -121,11 +118,9 @@ describe("useIframeCredentials", () => {
       { initialProps: { creds: credentials, origin: targetOrigin } },
     );
     act(() => {
-      Object.defineProperty(result.current.iframeRef, "current", {
-        value: mockIframe,
-        writable: true,
-        configurable: true,
-      });
+      (
+        result.current.iframeRef as MutableRefObject<HTMLIFrameElement>
+      ).current = mockIframe;
     });
     // Force effect to see the ref by changing props identity
     rerender({ creds: { ...credentials }, origin: targetOrigin });
@@ -149,11 +144,9 @@ describe("useIframeCredentials", () => {
       { initialProps: { creds: credentials, origin: targetOrigin } },
     );
     act(() => {
-      Object.defineProperty(result.current.iframeRef, "current", {
-        value: mockIframe,
-        writable: true,
-        configurable: true,
-      });
+      (
+        result.current.iframeRef as MutableRefObject<HTMLIFrameElement>
+      ).current = mockIframe;
     });
     // Force effect to see the ref by changing props identity
     rerender({ creds: { ...credentials }, origin: targetOrigin });
