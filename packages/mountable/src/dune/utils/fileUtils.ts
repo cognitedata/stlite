@@ -1,7 +1,7 @@
 // The stlite repo uses webpack 5 that does not have polyfills for node-fetch which
 // is used by cognite-sdk. This ended up being quite a bit of work to fix, so we just
 // download the files directly using fetch instead.
-
+import { ZipReader, BlobReader, Uint8ArrayWriter } from "@zip.js/zip.js";
 export interface SourceCodeResult {
   [filePath: string]: string;
 }
@@ -132,67 +132,40 @@ export const isZipFile = (fileName: string, mimeType?: string): boolean => {
 };
 
 /**
- * Process ZIP file content using JSZip - matches original implementation exactly
+ * Process ZIP file content using @zip.js/zip.js
  */
 export const processZipFile = async (
   binaryData: ArrayBuffer,
   fileName: string,
 ): Promise<SourceCodeResult> => {
-  const JSZip = (await import("jszip")).default;
-  const zip = new JSZip();
-  const loadedZip = await zip.loadAsync(binaryData);
-  const fileSystem = new Map<string, ArrayBuffer | string>();
+  // const { ZipReader, BlobReader, Uint8ArrayWriter } = await import("@zip.js/zip.js");
 
-  // Process each file in the zip
+  const blob = new Blob([binaryData]);
+  const zipReader = new ZipReader(new BlobReader(blob));
+  const entries = await zipReader.getEntries();
+  const result: SourceCodeResult = {};
+
   const promises: Promise<void>[] = [];
 
-  loadedZip.forEach((relativePath, zipEntry) => {
-    if (!zipEntry.dir) {
-      // It's a file, not a directory
+  // Process each file in the zip
+  for (const entry of entries) {
+    if (!entry.directory) {
       const promise = (async () => {
         try {
-          const extension = relativePath.split(".").pop()?.toLowerCase() || "";
-          const textExtensions = [
-            "html",
-            "css",
-            "js",
-            "json",
-            "txt",
-            "xml",
-            "svg",
-            "md",
-          ];
-
-          if (textExtensions.includes(extension)) {
-            // Extract as text for text files
-            const content = await zipEntry.async("string");
-            fileSystem.set(relativePath, content);
-          } else {
-            // Extract as binary for other files
-            const content = await zipEntry.async("arraybuffer");
-            fileSystem.set(relativePath, content);
-          }
+          // Extract as binary and convert to string for all files
+          const uint8ArrayWriter = new Uint8ArrayWriter();
+          const content = await entry.getData(uint8ArrayWriter);
+          result[entry.filename] = new TextDecoder().decode(content);
         } catch (error) {
-          console.error(`Error extracting file ${relativePath}:`, error);
+          console.error(`Error extracting file ${entry.filename}:`, error);
         }
       })();
 
       promises.push(promise);
     }
-  });
+  }
 
   await Promise.all(promises);
-
-  // Convert Map to object like the original implementation
-  const result: SourceCodeResult = {};
-  fileSystem.forEach((content, filePath) => {
-    if (typeof content === "string") {
-      result[filePath] = content;
-    } else {
-      // Convert ArrayBuffer to string if needed
-      result[filePath] = new TextDecoder().decode(content);
-    }
-  });
-
+  await zipReader.close();
   return result;
 };
