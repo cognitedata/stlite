@@ -26,7 +26,11 @@ export const useFetchFileContent = (
     externalId: string,
     credentials: Credentials,
   ) => Promise<{ downloadUrl: string }> = getFileDownloadUrl,
-) => {
+): {
+  fileContent: FileContent | undefined;
+  isLoading: boolean;
+  error: Error | null;
+} => {
   const [fileContent, setFileContent] = useState<FileContent | undefined>(
     undefined,
   );
