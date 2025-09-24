@@ -1,16 +1,13 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { useFetchFileContent } from "./useFetchFileContent";
-import { type Credentials } from "../utils/fileUtils";
+import {
+  type Credentials,
+  retrieveFileMetadata,
+  getFileDownloadUrl,
+} from "../utils/fileUtils";
 
-const mockRetrieveFileMetadata = jest.fn() as jest.MockedFunction<
-  (externalId: string, credentials: Credentials) => Promise<any>
->;
-const mockGetFileDownloadUrl = jest.fn() as jest.MockedFunction<
-  (
-    externalId: string,
-    credentials: Credentials,
-  ) => Promise<{ downloadUrl: string }>
->;
+const mockRetrieveFileMetadata: typeof retrieveFileMetadata = jest.fn();
+const mockGetFileDownloadUrl: typeof getFileDownloadUrl = jest.fn();
 
 describe("useFetchFileContent", () => {
   const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
@@ -38,8 +35,8 @@ describe("useFetchFileContent", () => {
     const mockFileContent = new ArrayBuffer(8);
 
     // Mock the utility functions
-    mockRetrieveFileMetadata.mockResolvedValueOnce(mockFile);
-    mockGetFileDownloadUrl.mockResolvedValueOnce({
+    jest.mocked(mockRetrieveFileMetadata).mockResolvedValueOnce(mockFile);
+    jest.mocked(mockGetFileDownloadUrl).mockResolvedValueOnce({
       downloadUrl: mockDownloadUrl,
     });
 
@@ -78,11 +75,11 @@ describe("useFetchFileContent", () => {
     expect(result.current.error).toBeNull();
 
     // Verify the utility functions were called
-    expect(mockRetrieveFileMetadata).toHaveBeenCalledWith(
+    expect(jest.mocked(mockRetrieveFileMetadata)).toHaveBeenCalledWith(
       "test-file",
       mockCredentials,
     );
-    expect(mockGetFileDownloadUrl).toHaveBeenCalledWith(
+    expect(jest.mocked(mockGetFileDownloadUrl)).toHaveBeenCalledWith(
       "test-file",
       mockCredentials,
     );
@@ -93,7 +90,7 @@ describe("useFetchFileContent", () => {
     const error = new Error("API request failed: 400 Bad Request");
 
     // Mock the utility function to throw an error
-    mockRetrieveFileMetadata.mockRejectedValueOnce(error);
+    jest.mocked(mockRetrieveFileMetadata).mockRejectedValueOnce(error);
 
     const { result } = renderHook(() =>
       useFetchFileContent(
@@ -127,7 +124,7 @@ describe("useFetchFileContent", () => {
     const { result: result2 } = renderHook(() =>
       useFetchFileContent(
         "test-file",
-        null,
+        undefined,
         mockRetrieveFileMetadata,
         mockGetFileDownloadUrl,
       ),
@@ -142,7 +139,7 @@ describe("useFetchFileContent", () => {
     expect(result2.current.error).toBeNull();
 
     // Verify no API calls were made
-    expect(mockRetrieveFileMetadata).not.toHaveBeenCalled();
-    expect(mockGetFileDownloadUrl).not.toHaveBeenCalled();
+    expect(jest.mocked(mockRetrieveFileMetadata)).not.toHaveBeenCalled();
+    expect(jest.mocked(mockGetFileDownloadUrl)).not.toHaveBeenCalled();
   });
 });
