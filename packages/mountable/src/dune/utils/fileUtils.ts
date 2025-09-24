@@ -2,7 +2,6 @@
 // is used by cognite-sdk. This ended up being quite a bit of work to fix, so we just
 // download the files directly using fetch instead.
 
-// Import types only - actual library imports are done lazily inside functions
 import type { Entry } from "@zip.js/zip.js";
 export interface SourceCodeResult {
   [filePath: string]: string;
