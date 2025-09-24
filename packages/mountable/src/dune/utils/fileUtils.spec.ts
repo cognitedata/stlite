@@ -14,7 +14,6 @@ describe("fileUtils", () => {
 
   beforeEach(() => {
     jest.spyOn(global, "fetch").mockImplementation(mockFetch);
-    jest.clearAllMocks();
   });
 
   afterEach(() => {
