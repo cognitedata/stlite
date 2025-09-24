@@ -30,7 +30,7 @@ export const useFetchFileContent = (
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    let isActive = true;
 
     const fetchFileContentData = async () => {
       if (!appId || !credentials) {
@@ -60,7 +60,7 @@ export const useFetchFileContent = (
         }
         const binaryData = await response.arrayBuffer();
 
-        if (isMounted) {
+        if (isActive) {
           setFileContent({
             binaryData,
             fileName: file.name,
@@ -69,11 +69,11 @@ export const useFetchFileContent = (
           });
         }
       } catch (err) {
-        if (isMounted) {
+        if (isActive) {
           setError(err instanceof Error ? err : new Error("Unknown error"));
         }
       } finally {
-        if (isMounted) {
+        if (isActive) {
           setIsLoading(false);
         }
       }
@@ -82,7 +82,7 @@ export const useFetchFileContent = (
     fetchFileContentData();
 
     return () => {
-      isMounted = false;
+      isActive = false;
     };
   }, [
     appId,
