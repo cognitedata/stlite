@@ -5,7 +5,7 @@ import {
 } from "./fileUtils";
 
 describe("fileUtils", () => {
-  const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+  const mockFetch: typeof fetch = jest.fn();
   const mockCredentials: Credentials = {
     token: "test-token",
     project: "test-project",
@@ -35,7 +35,7 @@ describe("fileUtils", () => {
         ],
       };
 
-      mockFetch.mockResolvedValueOnce({
+      jest.mocked(mockFetch).mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockResponse),
       } as unknown as Response);
@@ -53,7 +53,7 @@ describe("fileUtils", () => {
     });
 
     it("should throw error when file not found", async () => {
-      mockFetch.mockResolvedValueOnce({
+      jest.mocked(mockFetch).mockResolvedValueOnce({
         ok: false,
         status: 400,
         statusText: "Bad Request",
@@ -71,7 +71,7 @@ describe("fileUtils", () => {
         items: [{ downloadUrl: "https://download.example.test/file" }],
       };
 
-      mockFetch.mockResolvedValueOnce({
+      jest.mocked(mockFetch).mockResolvedValueOnce({
         ok: true,
         json: jest.fn().mockResolvedValueOnce(mockResponse),
       } as unknown as Response);
@@ -84,7 +84,7 @@ describe("fileUtils", () => {
     });
 
     it("should throw error when file not found", async () => {
-      mockFetch.mockResolvedValueOnce({
+      jest.mocked(mockFetch).mockResolvedValueOnce({
         ok: false,
         status: 400,
         statusText: "Bad Request",
