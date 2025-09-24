@@ -1,6 +1,10 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { useCredentials } from "./hooks";
+import {
+  useCredentials,
+  useFetchFileContent,
+  useParseFileContent,
+} from "./hooks";
 
 /**
  * Component for the /dune route - handles Fusion integration
@@ -9,6 +13,40 @@ import { useCredentials } from "./hooks";
 export const AppWithCredentials: React.FC = () => {
   const { appId } = useParams<{ appId: string }>();
   const { credentials } = useCredentials();
+
+  // Fetch file content using the new hooks with direct API calls
+  const {
+    fileContent,
+    isLoading: isFetching,
+    error: fetchError,
+  } = useFetchFileContent(appId, credentials);
+  const {
+    sourceCode,
+    isLoading: isParsing,
+    error: parseError,
+  } = useParseFileContent(fileContent);
+
+  // Console logging for debugging
+  React.useEffect(() => {
+    console.log("🔍 AppWithCredentials Debug Info:");
+    console.log("appId:", appId);
+    console.log("credentials:", credentials);
+    console.log("fileContent:", fileContent);
+    console.log("sourceCode:", sourceCode);
+    console.log("isFetching:", isFetching);
+    console.log("isParsing:", isParsing);
+    console.log("fetchError:", fetchError);
+    console.log("parseError:", parseError);
+  }, [
+    appId,
+    credentials,
+    fileContent,
+    sourceCode,
+    isFetching,
+    isParsing,
+    fetchError,
+    parseError,
+  ]);
 
   // Show loading state while waiting for credentials from Fusion
   if (!credentials) {
@@ -87,6 +125,166 @@ export const AppWithCredentials: React.FC = () => {
         }}
       >
         Step 2 Complete: App ready signal sent and credentials received!
+      </div>
+
+      {/* File Content Testing Section */}
+      <div
+        style={{
+          marginTop: "30px",
+          padding: "20px",
+          backgroundColor: "#f8f9fa",
+          borderRadius: "5px",
+          border: "1px solid #dee2e6",
+        }}
+      >
+        <h3>File Content Testing</h3>
+
+        {isFetching && (
+          <div style={{ color: "#007bff", marginBottom: "10px" }}>
+            🔄 Fetching file content...
+          </div>
+        )}
+
+        {fetchError && (
+          <div style={{ color: "#dc3545", marginBottom: "10px" }}>
+            ❌ Fetch Error: {fetchError.message}
+          </div>
+        )}
+
+        {isParsing && (
+          <div style={{ color: "#007bff", marginBottom: "10px" }}>
+            🔄 Parsing file content...
+          </div>
+        )}
+
+        {parseError && (
+          <div style={{ color: "#dc3545", marginBottom: "10px" }}>
+            ❌ Parse Error: {parseError.message}
+          </div>
+        )}
+
+        {fileContent && (
+          <div style={{ marginBottom: "15px" }}>
+            <h4>File Content Info:</h4>
+            <p>
+              <strong>File Name:</strong> {fileContent.fileName}
+            </p>
+            <p>
+              <strong>MIME Type:</strong> {fileContent.mimeType || "Unknown"}
+            </p>
+            <p>
+              <strong>Size:</strong> {fileContent.binaryData.byteLength} bytes
+            </p>
+            {fileContent.lastUpdated && (
+              <p>
+                <strong>Last Updated:</strong>{" "}
+                {fileContent.lastUpdated.toLocaleString()}
+              </p>
+            )}
+            <button
+              onClick={() => {
+                console.log("📁 Full fileContent object:", fileContent);
+                console.log(
+                  "📊 Binary data preview (first 100 bytes):",
+                  Array.from(
+                    new Uint8Array(fileContent.binaryData.slice(0, 100)),
+                  ),
+                );
+              }}
+              style={{
+                marginTop: "10px",
+                padding: "5px 10px",
+                backgroundColor: "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "3px",
+                cursor: "pointer",
+                fontSize: "12px",
+              }}
+            >
+              Log File Content to Console
+            </button>
+          </div>
+        )}
+
+        {sourceCode && (
+          <div>
+            <h4>Parsed Source Code:</h4>
+            <button
+              onClick={() => {
+                console.log("📝 Full sourceCode object:", sourceCode);
+                console.log("📋 File count:", Object.keys(sourceCode).length);
+                Object.entries(sourceCode).forEach(([filePath, content]) => {
+                  console.log(`📄 File: ${filePath}`, {
+                    path: filePath,
+                    contentLength: content.length,
+                    contentPreview:
+                      content.substring(0, 200) +
+                      (content.length > 200 ? "..." : ""),
+                    fullContent: content,
+                  });
+                });
+              }}
+              style={{
+                marginBottom: "15px",
+                padding: "8px 15px",
+                backgroundColor: "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: "3px",
+                cursor: "pointer",
+                fontSize: "14px",
+              }}
+            >
+              Log Source Code to Console
+            </button>
+            <div
+              style={{
+                backgroundColor: "#fff",
+                padding: "15px",
+                borderRadius: "3px",
+                border: "1px solid #ddd",
+                maxHeight: "300px",
+                overflow: "auto",
+                fontSize: "12px",
+                fontFamily: "monospace",
+              }}
+            >
+              {Object.keys(sourceCode).length === 0 ? (
+                <div style={{ color: "#666" }}>No files found</div>
+              ) : (
+                Object.entries(sourceCode).map(([filePath, content]) => (
+                  <div key={filePath} style={{ marginBottom: "20px" }}>
+                    <div
+                      style={{
+                        fontWeight: "bold",
+                        color: "#007bff",
+                        marginBottom: "5px",
+                      }}
+                    >
+                      📄 {filePath}
+                    </div>
+                    <div
+                      style={{
+                        backgroundColor: "#f8f9fa",
+                        padding: "10px",
+                        borderRadius: "3px",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        maxHeight: "200px",
+                        overflow: "auto",
+                      }}
+                    >
+                      {content.length > 1000
+                        ? `${content.substring(0, 1000)}... (truncated, ${content.length} total chars)`
+                        : content}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
