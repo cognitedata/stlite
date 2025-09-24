@@ -78,7 +78,7 @@ export const useFetchFileContent = (
         }
       } catch (err) {
         if (isActive) {
-          setError(err instanceof Error ? err : new Error("Unknown error"));
+          setError(err instanceof Error ? err : new Error(String(err)));
         }
       } finally {
         if (isActive) {
