@@ -1,7 +1,7 @@
 // The stlite repo uses webpack 5 that does not have polyfills for node-fetch which
 // is used by cognite-sdk. This ended up being quite a bit of work to fix, so we just
 // download the files directly using fetch instead.
-import { ZipReader, BlobReader, Uint8ArrayWriter } from "@zip.js/zip.js";
+import { ZipReader, BlobReader, Uint8ArrayWriter, Entry } from "@zip.js/zip.js";
 export interface SourceCodeResult {
   [filePath: string]: string;
 }
@@ -132,17 +132,27 @@ export const isZipFile = (fileName: string, mimeType?: string): boolean => {
 };
 
 /**
- * Process ZIP file content using @zip.js/zip.js
+ * Default ZIP processor using @zip.js/zip.js
+ */
+export const defaultGetZipEntries = async (
+  binaryData: ArrayBuffer,
+): Promise<Entry[]> => {
+  const blob = new Blob([binaryData]);
+  const zipReader = new ZipReader(new BlobReader(blob));
+  const entries = await zipReader.getEntries();
+  await zipReader.close();
+  return entries;
+};
+
+/**
+ * Process ZIP file content
  */
 export const processZipFile = async (
   binaryData: ArrayBuffer,
   fileName: string,
+  getZipEntries: (data: ArrayBuffer) => Promise<Entry[]> = defaultGetZipEntries,
 ): Promise<SourceCodeResult> => {
-  // const { ZipReader, BlobReader, Uint8ArrayWriter } = await import("@zip.js/zip.js");
-
-  const blob = new Blob([binaryData]);
-  const zipReader = new ZipReader(new BlobReader(blob));
-  const entries = await zipReader.getEntries();
+  const entries = await getZipEntries(binaryData);
   const result: SourceCodeResult = {};
 
   const promises: Promise<void>[] = [];
@@ -166,6 +176,5 @@ export const processZipFile = async (
   }
 
   await Promise.all(promises);
-  await zipReader.close();
   return result;
 };
