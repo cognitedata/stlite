@@ -6,10 +6,11 @@ import {
   getFileDownloadUrl,
 } from "../utils/fileUtils";
 
-const mockRetrieveFileMetadata: typeof retrieveFileMetadata = jest.fn();
-const mockGetFileDownloadUrl: typeof getFileDownloadUrl = jest.fn();
-const mockFetch: typeof fetch = jest.fn();
 describe("useFetchFileContent", () => {
+  const mockRetrieveFileMetadata: typeof retrieveFileMetadata = jest.fn();
+  const mockGetFileDownloadUrl: typeof getFileDownloadUrl = jest.fn();
+  const mockFetch: typeof fetch = jest.fn();
+
   const mockCredentials: Credentials = {
     token: "test-token",
     project: "test-project",
