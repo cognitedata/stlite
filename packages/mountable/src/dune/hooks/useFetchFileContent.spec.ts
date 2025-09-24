@@ -128,7 +128,7 @@ describe("useFetchFileContent", () => {
     const { result: result2 } = renderHook(() =>
       useFetchFileContent(
         "test-file",
-        undefined,
+        null,
         mockRetrieveFileMetadata,
         mockGetFileDownloadUrl,
       ),

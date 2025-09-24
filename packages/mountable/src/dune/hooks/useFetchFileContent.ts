@@ -17,7 +17,7 @@ export interface FileContent {
  */
 export const useFetchFileContent = (
   appId: string | undefined,
-  credentials: Credentials | undefined,
+  credentials: Credentials | null,
   retrieveFileMetadataFunction: (
     externalId: string,
     credentials: Credentials,
