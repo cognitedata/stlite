@@ -18,7 +18,10 @@ describe("useFetchFileContent", () => {
 
   beforeEach(() => {
     jest.spyOn(global, "fetch").mockImplementation(mockFetch);
-    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("should fetch file content successfully", async () => {
