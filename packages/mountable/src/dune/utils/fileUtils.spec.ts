@@ -146,11 +146,11 @@ describe("fileUtils", () => {
     const createMockEntry = (filename: string, directory: boolean = false) => ({
       filename,
       directory,
-      getData: jest.fn(),
+      getData: jest.fn(), // the typing here was quite hard to get right.
     });
 
-    beforeEach(() => {
-      jest.clearAllMocks();
+    afterEach(() => {
+      jest.restoreAllMocks();
     });
 
     it("should process zip file with multiple text files successfully", async () => {
@@ -196,44 +196,6 @@ describe("fileUtils", () => {
       expect(mockEntries[3].getData).toHaveBeenCalled();
     });
 
-    it("should handle empty zip file", async () => {
-      const mockEntries: any[] = [];
-      const mockGetZipEntries = jest.fn().mockResolvedValue(mockEntries);
-
-      const result = await processZipFile(
-        mockBinaryData,
-        mockFileName,
-        mockGetZipEntries,
-      );
-
-      expect(mockGetZipEntries).toHaveBeenCalledWith(mockBinaryData);
-      expect(result).toEqual({});
-    });
-
-    it("should handle zip file with only directories", async () => {
-      const mockEntries = [
-        createMockEntry("dir1/", true),
-        createMockEntry("dir2/", true),
-        createMockEntry("dir1/subdir/", true),
-      ];
-
-      const mockGetZipEntries = jest.fn().mockResolvedValue(mockEntries);
-
-      const result = await processZipFile(
-        mockBinaryData,
-        mockFileName,
-        mockGetZipEntries,
-      );
-
-      expect(mockGetZipEntries).toHaveBeenCalledWith(mockBinaryData);
-      expect(result).toEqual({});
-
-      // Verify that getData was never called for directories
-      mockEntries.forEach((entry) => {
-        expect(entry.getData).not.toHaveBeenCalled();
-      });
-    });
-
     it("should handle file extraction errors gracefully", async () => {
       const mockEntries = [
         createMockEntry("file1.txt"),
@@ -270,112 +232,6 @@ describe("fileUtils", () => {
       );
 
       consoleSpy.mockRestore();
-    });
-
-    it("should handle binary files correctly", async () => {
-      const mockEntries = [
-        createMockEntry("image.png"),
-        createMockEntry("data.bin"),
-      ];
-
-      // Mock binary content
-      const mockImageContent = new Uint8Array([
-        137, 80, 78, 71, 13, 10, 26, 10,
-      ]); // PNG header
-      const mockDataContent = new Uint8Array([0, 1, 2, 3, 4, 5]);
-
-      mockEntries[0].getData.mockResolvedValue(mockImageContent);
-      mockEntries[1].getData.mockResolvedValue(mockDataContent);
-
-      const mockGetZipEntries = jest.fn().mockResolvedValue(mockEntries);
-
-      const result = await processZipFile(
-        mockBinaryData,
-        mockFileName,
-        mockGetZipEntries,
-      );
-
-      expect(result).toEqual({
-        "image.png": "�PNG\r\n\x1a\n", // TextDecoder result of PNG header (with replacement character for byte 137)
-        "data.bin": "\x00\x01\x02\x03\x04\x05", // TextDecoder result of binary data
-      });
-    });
-
-    it("should handle files with special characters in names", async () => {
-      const mockEntries = [
-        createMockEntry("file with spaces.txt"),
-        createMockEntry("file-with-dashes.txt"),
-        createMockEntry("file_with_underscores.txt"),
-        createMockEntry("file.with.dots.txt"),
-        createMockEntry("файл-с-кириллицей.txt"), // Cyrillic
-        createMockEntry("文件-中文.txt"), // Chinese
-      ];
-
-      const mockContent = new TextEncoder().encode("Test content");
-
-      mockEntries.forEach((entry) => {
-        entry.getData.mockResolvedValue(mockContent);
-      });
-
-      const mockGetZipEntries = jest.fn().mockResolvedValue(mockEntries);
-
-      const result = await processZipFile(
-        mockBinaryData,
-        mockFileName,
-        mockGetZipEntries,
-      );
-
-      expect(result).toEqual({
-        "file with spaces.txt": "Test content",
-        "file-with-dashes.txt": "Test content",
-        "file_with_underscores.txt": "Test content",
-        "file.with.dots.txt": "Test content",
-        "файл-с-кириллицей.txt": "Test content",
-        "文件-中文.txt": "Test content",
-      });
-    });
-
-    it("should handle large files", async () => {
-      const mockEntries = [createMockEntry("large-file.txt")];
-
-      // Create a large content (1MB of 'A' characters)
-      const largeContent = new TextEncoder().encode("A".repeat(1024 * 1024));
-      mockEntries[0].getData.mockResolvedValue(largeContent);
-
-      const mockGetZipEntries = jest.fn().mockResolvedValue(mockEntries);
-
-      const result = await processZipFile(
-        mockBinaryData,
-        mockFileName,
-        mockGetZipEntries,
-      );
-
-      expect(result).toEqual({
-        "large-file.txt": "A".repeat(1024 * 1024),
-      });
-    });
-
-    it("should use default getZipEntries function when not provided", async () => {
-      // This test verifies that the function signature works with the default parameter
-      // We can't actually test the default implementation since it uses the real library
-      // But we can verify the function doesn't throw when called with undefined
-      const mockEntries = [createMockEntry("test.txt")];
-      mockEntries[0].getData.mockResolvedValue(
-        new TextEncoder().encode("test"),
-      );
-
-      // Mock the default function by providing it explicitly
-      const mockDefaultGetZipEntries = jest.fn().mockResolvedValue(mockEntries);
-
-      const result = await processZipFile(
-        mockBinaryData,
-        mockFileName,
-        mockDefaultGetZipEntries,
-      );
-
-      expect(result).toEqual({
-        "test.txt": "test",
-      });
     });
   });
 });

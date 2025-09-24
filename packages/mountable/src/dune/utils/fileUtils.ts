@@ -146,6 +146,7 @@ export const defaultGetZipEntries = async (
   const zipReader = new ZipReader(new BlobReader(blob));
   const entries = await zipReader.getEntries();
   await zipReader.close();
+
   return entries;
 };
 
