@@ -16,8 +16,8 @@ export interface FileContent {
  * Hook to fetch file content from CDF using direct API calls
  */
 export const useFetchFileContent = (
-  appId?: string,
-  credentials?: Credentials | null,
+  appId: string | undefined,
+  credentials: Credentials | undefined,
   retrieveFileMetadataFunction: (
     externalId: string,
     credentials: Credentials,
