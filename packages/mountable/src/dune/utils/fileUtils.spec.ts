@@ -76,7 +76,7 @@ describe("fileUtils", () => {
       const result = await getFileDownloadUrl("test-file", mockCredentials);
 
       expect(result).toEqual({
-        downloadUrl: "https://download.example.com/file",
+        downloadUrl: "https://download.example.test/file",
       });
     });
 
