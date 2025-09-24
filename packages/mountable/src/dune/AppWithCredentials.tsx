@@ -5,7 +5,6 @@ import {
   useFetchFileContent,
   useParseFileContent,
 } from "./hooks";
-import { CogniteClient } from "@cognite/sdk";
 
 /**
  * Component for the /dune route - handles Fusion integration
@@ -14,25 +13,13 @@ import { CogniteClient } from "@cognite/sdk";
 export const AppWithCredentials: React.FC = () => {
   const { appId } = useParams<{ appId: string }>();
   const { credentials } = useCredentials();
-  console.log("WTF IS THIS!!!");
-  // Create SDK instance when credentials are available
-  const sdk = React.useMemo(() => {
-    if (!credentials) return null;
 
-    return new CogniteClient({
-      appId: "stlite-dune-test",
-      project: credentials.project,
-      baseUrl: credentials.baseUrl,
-      oidcTokenProvider: async () => credentials.token,
-    });
-  }, [credentials]);
-
-  // Fetch file content using the new hooks
+  // Fetch file content using the new hooks with direct API calls
   const {
     fileContent,
     isLoading: isFetching,
     error: fetchError,
-  } = useFetchFileContent(appId, sdk);
+  } = useFetchFileContent(appId, credentials);
   const {
     sourceCode,
     isLoading: isParsing,
@@ -44,7 +31,6 @@ export const AppWithCredentials: React.FC = () => {
     console.log("🔍 AppWithCredentials Debug Info:");
     console.log("appId:", appId);
     console.log("credentials:", credentials);
-    console.log("sdk:", sdk);
     console.log("fileContent:", fileContent);
     console.log("sourceCode:", sourceCode);
     console.log("isFetching:", isFetching);
@@ -54,7 +40,6 @@ export const AppWithCredentials: React.FC = () => {
   }, [
     appId,
     credentials,
-    sdk,
     fileContent,
     sourceCode,
     isFetching,

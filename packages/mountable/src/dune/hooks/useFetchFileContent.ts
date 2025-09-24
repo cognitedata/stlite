@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CogniteClient } from "@cognite/sdk";
+import { fetchFileContent, Credentials } from "../utils/fileUtils";
 
 export interface FileContent {
   binaryData: ArrayBuffer;
@@ -9,11 +9,11 @@ export interface FileContent {
 }
 
 /**
- * Hook to fetch file content from CDF using SDK
+ * Hook to fetch file content from CDF using direct API calls
  */
 export const useFetchFileContent = (
   appId?: string,
-  sdk?: CogniteClient | null,
+  credentials?: Credentials | null,
 ) => {
   const [fileContent, setFileContent] = useState<FileContent | undefined>(
     undefined,
@@ -24,8 +24,8 @@ export const useFetchFileContent = (
   useEffect(() => {
     let isMounted = true;
 
-    const fetchFileContent = async () => {
-      if (!appId || !sdk) {
+    const fetchFileContentData = async () => {
+      if (!appId || !credentials) {
         setFileContent(undefined);
         return;
       }
@@ -34,40 +34,11 @@ export const useFetchFileContent = (
       setError(null);
 
       try {
-        // Get file metadata
-        const files = await sdk.files.retrieve([{ externalId: appId }]);
-        if (!files.length) {
-          throw new Error("Could not retrieve file metadata");
-        }
-
-        const file = files[0];
-
-        // Get download URL
-        const downloadUrls = await sdk.files.getDownloadUrls([
-          { externalId: appId },
-        ]);
-
-        if (!downloadUrls.length) {
-          throw new Error("Could not get download URL for file");
-        }
-
-        // Fetch the file content
-        const response = await fetch(downloadUrls[0].downloadUrl);
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch file content: ${response.statusText}`,
-          );
-        }
-
-        const binaryData = await response.arrayBuffer();
+        // Use the direct API call from fileUtils
+        const fileContentData = await fetchFileContent(appId, credentials);
 
         if (isMounted) {
-          setFileContent({
-            binaryData,
-            fileName: file.name,
-            mimeType: file.mimeType,
-            lastUpdated: file.lastUpdatedTime || file.createdTime,
-          });
+          setFileContent(fileContentData);
         }
       } catch (err) {
         if (isMounted) {
@@ -80,12 +51,12 @@ export const useFetchFileContent = (
       }
     };
 
-    fetchFileContent();
+    fetchFileContentData();
 
     return () => {
       isMounted = false;
     };
-  }, [appId, sdk]);
+  }, [appId, credentials]);
 
   return {
     fileContent,
