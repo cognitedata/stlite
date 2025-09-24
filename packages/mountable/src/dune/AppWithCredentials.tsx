@@ -17,10 +17,10 @@ export const AppWithCredentials: React.FC = () => {
     isLoading: isFetching,
     error: fetchError,
   } = useFetchFileContent(
-    retrieveFileMetadata,
-    getFileDownloadUrl,
     appId,
     credentials,
+    retrieveFileMetadata,
+    getFileDownloadUrl,
   );
 
   // Show loading state while waiting for credentials from Fusion

@@ -51,10 +51,10 @@ describe("useFetchFileContent", () => {
 
     const { result } = renderHook(() =>
       useFetchFileContent(
-        mockRetrieveFileMetadata,
-        mockGetFileDownloadUrl,
         "test-file",
         mockCredentials,
+        mockRetrieveFileMetadata,
+        mockGetFileDownloadUrl,
       ),
     );
 
@@ -97,10 +97,10 @@ describe("useFetchFileContent", () => {
 
     const { result } = renderHook(() =>
       useFetchFileContent(
-        mockRetrieveFileMetadata,
-        mockGetFileDownloadUrl,
         "test-file",
         mockCredentials,
+        mockRetrieveFileMetadata,
+        mockGetFileDownloadUrl,
       ),
     );
 
@@ -117,19 +117,19 @@ describe("useFetchFileContent", () => {
   it("should not fetch when appId or credentials are missing", () => {
     const { result: result1 } = renderHook(() =>
       useFetchFileContent(
-        mockRetrieveFileMetadata,
-        mockGetFileDownloadUrl,
         undefined,
         mockCredentials,
+        mockRetrieveFileMetadata,
+        mockGetFileDownloadUrl,
       ),
     );
 
     const { result: result2 } = renderHook(() =>
       useFetchFileContent(
-        mockRetrieveFileMetadata,
-        mockGetFileDownloadUrl,
         "test-file",
         null,
+        mockRetrieveFileMetadata,
+        mockGetFileDownloadUrl,
       ),
     );
 
