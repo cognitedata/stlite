@@ -8,9 +8,8 @@ import {
 
 const mockRetrieveFileMetadata: typeof retrieveFileMetadata = jest.fn();
 const mockGetFileDownloadUrl: typeof getFileDownloadUrl = jest.fn();
-
+const mockFetch: typeof fetch = jest.fn();
 describe("useFetchFileContent", () => {
-  const mockFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
   const mockCredentials: Credentials = {
     token: "test-token",
     project: "test-project",
@@ -18,7 +17,7 @@ describe("useFetchFileContent", () => {
   };
 
   beforeEach(() => {
-    global.fetch = mockFetch;
+    jest.spyOn(global, "fetch").mockImplementation(mockFetch);
     jest.clearAllMocks();
   });
 
@@ -41,10 +40,11 @@ describe("useFetchFileContent", () => {
     });
 
     // Mock the fetch call
-    mockFetch.mockResolvedValueOnce({
+    const mockedResponse: Partial<Response> = {
       ok: true,
-      arrayBuffer: jest.fn().mockResolvedValueOnce(mockFileContent),
-    } as unknown as Response);
+      arrayBuffer: jest.fn(() => Promise.resolve(mockFileContent)),
+    };
+    jest.mocked(mockFetch).mockResolvedValueOnce(mockedResponse as Response);
 
     const { result } = renderHook(() =>
       useFetchFileContent(
