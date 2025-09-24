@@ -7,5 +7,7 @@
 // Polyfill for TextEncoder/TextDecoder in Node.js test environment
 import { TextEncoder, TextDecoder } from "util";
 
-global.TextEncoder = TextEncoder;
+// We do as any because the Node.js TextEncoder/TextDecoder are not the same as the browser TextEncoder/TextDecoder
+// but we dont see that difference in our tests.
+global.TextEncoder = TextEncoder as any;
 global.TextDecoder = TextDecoder as any;
