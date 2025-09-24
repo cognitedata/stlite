@@ -196,31 +196,3 @@ export const processZipFile = async (
 
   return result;
 };
-
-/**
- * Process regular file content
- */
-export const processRegularFile = (
-  binaryData: ArrayBuffer,
-  fileName: string,
-): SourceCodeResult => {
-  const content = new TextDecoder().decode(binaryData);
-  return {
-    [fileName]: content,
-  };
-};
-
-/**
- * Parse file content into source code result
- */
-export const parseFileContent = async (
-  fileContent: FileContent,
-): Promise<SourceCodeResult> => {
-  const { binaryData, fileName, mimeType } = fileContent;
-
-  if (isZipFile(fileName, mimeType)) {
-    return await processZipFile(binaryData, fileName);
-  } else {
-    return processRegularFile(binaryData, fileName);
-  }
-};
