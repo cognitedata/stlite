@@ -17,16 +17,6 @@ export const AppWithCredentials: React.FC = () => {
     error: fetchError,
   } = useFetchFileContent(appId, credentials);
 
-  // Console logging for debugging
-  React.useEffect(() => {
-    console.log("🔍 AppWithCredentials Debug Info:");
-    console.log("appId:", appId);
-    console.log("credentials:", credentials);
-    console.log("fileContent:", fileContent);
-    console.log("isFetching:", isFetching);
-    console.log("fetchError:", fetchError);
-  }, [appId, credentials, fileContent, isFetching, fetchError]);
-
   // Show loading state while waiting for credentials from Fusion
   if (!credentials) {
     return (
