@@ -1,6 +1,7 @@
 import {
   retrieveFileMetadata,
   getFileDownloadUrl,
+  isZipFile,
   type Credentials,
 } from "./fileUtils";
 
@@ -93,6 +94,36 @@ describe("fileUtils", () => {
       await expect(
         getFileDownloadUrl("does-not-exist", mockCredentials),
       ).rejects.toThrow("API request failed: 400 Bad Request");
+    });
+  });
+
+  describe("isZipFile", () => {
+    it("should return true for .zip file extension", () => {
+      expect(isZipFile("test.zip")).toBe(true);
+      expect(isZipFile("TEST.ZIP")).toBe(true);
+      expect(isZipFile("path/to/file.zip")).toBe(true);
+    });
+
+    it("should return true for application/zip MIME type", () => {
+      expect(isZipFile("test", "application/zip")).toBe(true);
+      expect(isZipFile("test.txt", "application/zip")).toBe(true);
+    });
+
+    it("should return true for application/x-zip-compressed MIME type", () => {
+      expect(isZipFile("test", "application/x-zip-compressed")).toBe(true);
+      expect(isZipFile("test.txt", "application/x-zip-compressed")).toBe(true);
+    });
+
+    it("should return false for non-zip files", () => {
+      expect(isZipFile("test.txt")).toBe(false);
+      expect(isZipFile("test.py")).toBe(false);
+      expect(isZipFile("test", "text/plain")).toBe(false);
+      expect(isZipFile("test", "application/json")).toBe(false);
+    });
+
+    it("should return false when no MIME type provided and no .zip extension", () => {
+      expect(isZipFile("test")).toBe(false);
+      expect(isZipFile("test.tar.gz")).toBe(false);
     });
   });
 });
