@@ -1,7 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useCredentials, useFetchFileContent } from "./hooks";
-import { retrieveFileMetadata, getFileDownloadUrl } from "./utils/fileUtils";
 
 /**
  * Component for the /dune route - handles Fusion integration
