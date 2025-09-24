@@ -1,9 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  retrieveFileMetadata,
-  getFileDownloadUrl,
-  Credentials,
-} from "../utils/fileUtils";
+import { Credentials } from "../utils/fileUtils";
 
 export interface FileContent {
   binaryData: ArrayBuffer;
@@ -16,6 +12,14 @@ export interface FileContent {
  * Hook to fetch file content from CDF using direct API calls
  */
 export const useFetchFileContent = (
+  retrieveFileMetadataFunction: (
+    externalId: string,
+    credentials: Credentials,
+  ) => Promise<any>,
+  getFileDownloadUrlFunction: (
+    externalId: string,
+    credentials: Credentials,
+  ) => Promise<{ downloadUrl: string }>,
   appId?: string,
   credentials?: Credentials | null,
 ) => {
@@ -39,10 +43,13 @@ export const useFetchFileContent = (
 
       try {
         // Get file metadata
-        const file = await retrieveFileMetadata(appId, credentials);
+        const file = await retrieveFileMetadataFunction(appId, credentials);
 
         // Get download URL
-        const { downloadUrl } = await getFileDownloadUrl(appId, credentials);
+        const { downloadUrl } = await getFileDownloadUrlFunction(
+          appId,
+          credentials,
+        );
 
         // Fetch the file content
         const response = await fetch(downloadUrl);
@@ -77,7 +84,12 @@ export const useFetchFileContent = (
     return () => {
       isMounted = false;
     };
-  }, [appId, credentials]);
+  }, [
+    appId,
+    credentials,
+    retrieveFileMetadataFunction,
+    getFileDownloadUrlFunction,
+  ]);
 
   return {
     fileContent,

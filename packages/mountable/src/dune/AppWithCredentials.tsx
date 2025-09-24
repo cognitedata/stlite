@@ -1,6 +1,7 @@
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useCredentials, useFetchFileContent } from "./hooks";
+import { retrieveFileMetadata, getFileDownloadUrl } from "./utils/fileUtils";
 
 /**
  * Component for the /dune route - handles Fusion integration
@@ -15,7 +16,12 @@ export const AppWithCredentials: React.FC = () => {
     fileContent,
     isLoading: isFetching,
     error: fetchError,
-  } = useFetchFileContent(appId, credentials);
+  } = useFetchFileContent(
+    retrieveFileMetadata,
+    getFileDownloadUrl,
+    appId,
+    credentials,
+  );
 
   // Show loading state while waiting for credentials from Fusion
   if (!credentials) {
