@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
-import { fetchFileContent, Credentials } from "../utils/fileUtils";
+import {
+  retrieveFileMetadata,
+  getFileDownloadUrl,
+  Credentials,
+} from "../utils/fileUtils";
 
 export interface FileContent {
   binaryData: ArrayBuffer;
@@ -34,10 +38,28 @@ export const useFetchFileContent = (
       setError(null);
 
       try {
-        const fileContentData = await fetchFileContent(appId, credentials);
+        // Get file metadata
+        const file = await retrieveFileMetadata(appId, credentials);
+
+        // Get download URL
+        const { downloadUrl } = await getFileDownloadUrl(appId, credentials);
+
+        // Fetch the file content
+        const response = await fetch(downloadUrl);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch file content: ${response.statusText}`,
+          );
+        }
+        const binaryData = await response.arrayBuffer();
 
         if (isMounted) {
-          setFileContent(fileContentData);
+          setFileContent({
+            binaryData,
+            fileName: file.name,
+            mimeType: file.mimeType,
+            lastUpdated: file.lastUpdatedTime || file.createdTime,
+          });
         }
       } catch (err) {
         if (isMounted) {
