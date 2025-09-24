@@ -13,8 +13,12 @@ describe("fileUtils", () => {
   };
 
   beforeEach(() => {
-    global.fetch = mockFetch;
+    jest.spyOn(global, "fetch").mockImplementation(mockFetch);
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe("retrieveFileMetadata", () => {
