@@ -130,18 +130,6 @@ export const AppWithCredentials: React.FC = () => {
           </div>
         )}
 
-        {isParsing && (
-          <div style={{ color: "#007bff", marginBottom: "10px" }}>
-            🔄 Parsing file content...
-          </div>
-        )}
-
-        {parseError && (
-          <div style={{ color: "#dc3545", marginBottom: "10px" }}>
-            ❌ Parse Error: {parseError.message}
-          </div>
-        )}
-
         {fileContent && (
           <div style={{ marginBottom: "15px" }}>
             <h4>File Content Info:</h4>
@@ -183,85 +171,6 @@ export const AppWithCredentials: React.FC = () => {
             >
               Log File Content to Console
             </button>
-          </div>
-        )}
-
-        {sourceCode && (
-          <div>
-            <h4>Parsed Source Code:</h4>
-            <button
-              onClick={() => {
-                console.log("📝 Full sourceCode object:", sourceCode);
-                console.log("📋 File count:", Object.keys(sourceCode).length);
-                Object.entries(sourceCode).forEach(([filePath, content]) => {
-                  console.log(`📄 File: ${filePath}`, {
-                    path: filePath,
-                    contentLength: content.length,
-                    contentPreview:
-                      content.substring(0, 200) +
-                      (content.length > 200 ? "..." : ""),
-                    fullContent: content,
-                  });
-                });
-              }}
-              style={{
-                marginBottom: "15px",
-                padding: "8px 15px",
-                backgroundColor: "#28a745",
-                color: "white",
-                border: "none",
-                borderRadius: "3px",
-                cursor: "pointer",
-                fontSize: "14px",
-              }}
-            >
-              Log Source Code to Console
-            </button>
-            <div
-              style={{
-                backgroundColor: "#fff",
-                padding: "15px",
-                borderRadius: "3px",
-                border: "1px solid #ddd",
-                maxHeight: "300px",
-                overflow: "auto",
-                fontSize: "12px",
-                fontFamily: "monospace",
-              }}
-            >
-              {Object.keys(sourceCode).length === 0 ? (
-                <div style={{ color: "#666" }}>No files found</div>
-              ) : (
-                Object.entries(sourceCode).map(([filePath, content]) => (
-                  <div key={filePath} style={{ marginBottom: "20px" }}>
-                    <div
-                      style={{
-                        fontWeight: "bold",
-                        color: "#007bff",
-                        marginBottom: "5px",
-                      }}
-                    >
-                      📄 {filePath}
-                    </div>
-                    <div
-                      style={{
-                        backgroundColor: "#f8f9fa",
-                        padding: "10px",
-                        borderRadius: "3px",
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                        maxHeight: "200px",
-                        overflow: "auto",
-                      }}
-                    >
-                      {content.length > 1000
-                        ? `${content.substring(0, 1000)}... (truncated, ${content.length} total chars)`
-                        : content}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
           </div>
         )}
       </div>
