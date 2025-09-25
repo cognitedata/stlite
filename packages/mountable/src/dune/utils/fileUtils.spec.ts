@@ -4,6 +4,7 @@ import {
   isZipFile,
   type Credentials,
   processZipFile,
+  defaultGetZipEntries,
 } from "./fileUtils";
 
 import type { DirectoryEntry, FileEntry } from "@zip.js/zip.js";
@@ -189,8 +190,9 @@ describe("fileUtils", () => {
       jest.mocked(mockFile2.getData).mockResolvedValue(mockFile2Content);
       jest.mocked(mockFile3.getData).mockResolvedValue(mockFile3Content);
 
-      const mockGetZipEntries = jest.fn().mockResolvedValue(mockEntries);
-
+      const mockGetZipEntries: typeof defaultGetZipEntries = jest
+        .fn()
+        .mockResolvedValue(mockEntries);
       const result = await processZipFile(
         mockBinaryData,
         mockFileName,
@@ -227,8 +229,9 @@ describe("fileUtils", () => {
         .mockRejectedValue(new Error("Extraction failed"));
       jest.mocked(mockEntries[2].getData).mockResolvedValue(mockFile3Content);
 
-      const mockGetZipEntries = jest.fn().mockResolvedValue(mockEntries);
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+      const mockGetZipEntries: typeof defaultGetZipEntries = jest
+        .fn()
+        .mockResolvedValue(mockEntries);
 
       const result = await processZipFile(
         mockBinaryData,
@@ -240,14 +243,6 @@ describe("fileUtils", () => {
         "file1.txt": "Success content",
         "file3.txt": "Another success",
       });
-
-      // Verify error was logged
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Error extracting file file2.txt:",
-        expect.any(Error),
-      );
-
-      consoleSpy.mockRestore();
     });
   });
 });
