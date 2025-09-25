@@ -26,7 +26,7 @@ describe("useFetchFileContent", () => {
   });
 
   it("should fetch file content successfully", async () => {
-    const mockFile = {
+    const mockFile: CogniteFile = {
       id: 123,
       externalId: "test-file",
       name: "test.py",
