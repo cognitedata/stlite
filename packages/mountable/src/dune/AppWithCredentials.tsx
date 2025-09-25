@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { useCredentials } from "./hooks";
+import { useCredentials, useFetchFileContent } from "./hooks";
 
 /**
  * Component for the /dune route - handles Fusion integration
@@ -9,6 +9,16 @@ import { useCredentials } from "./hooks";
 export const AppWithCredentials: React.FC = () => {
   const { appId } = useParams<{ appId: string }>();
   const { credentials } = useCredentials();
+
+  // Fetch file content using the new hooks with direct API calls
+  const {
+    fileContent,
+    isLoading: isFetching,
+    error: fetchError,
+  } = useFetchFileContent(
+    appId,
+    credentials,
+  );
 
   // Show loading state while waiting for credentials from Fusion
   if (!credentials) {
@@ -87,6 +97,75 @@ export const AppWithCredentials: React.FC = () => {
         }}
       >
         Step 2 Complete: App ready signal sent and credentials received!
+      </div>
+
+      {/* File Content Testing Section */}
+      <div
+        style={{
+          marginTop: "30px",
+          padding: "20px",
+          backgroundColor: "#f8f9fa",
+          borderRadius: "5px",
+          border: "1px solid #dee2e6",
+        }}
+      >
+        <h3>File Content Testing</h3>
+
+        {isFetching && (
+          <div style={{ color: "#007bff", marginBottom: "10px" }}>
+            🔄 Fetching file content...
+          </div>
+        )}
+
+        {fetchError && (
+          <div style={{ color: "#dc3545", marginBottom: "10px" }}>
+            ❌ Fetch Error: {fetchError.message}
+          </div>
+        )}
+
+        {fileContent && (
+          <div style={{ marginBottom: "15px" }}>
+            <h4>File Content Info:</h4>
+            <p>
+              <strong>File Name:</strong> {fileContent.fileName}
+            </p>
+            <p>
+              <strong>MIME Type:</strong> {fileContent.mimeType || "Unknown"}
+            </p>
+            <p>
+              <strong>Size:</strong> {fileContent.binaryData.byteLength} bytes
+            </p>
+            {fileContent.lastUpdated && (
+              <p>
+                <strong>Last Updated:</strong>{" "}
+                {fileContent.lastUpdated.toLocaleString()}
+              </p>
+            )}
+            <button
+              onClick={() => {
+                console.log("📁 Full fileContent object:", fileContent);
+                console.log(
+                  "📊 Binary data preview (first 100 bytes):",
+                  Array.from(
+                    new Uint8Array(fileContent.binaryData.slice(0, 100)),
+                  ),
+                );
+              }}
+              style={{
+                marginTop: "10px",
+                padding: "5px 10px",
+                backgroundColor: "#007bff",
+                color: "white",
+                border: "none",
+                borderRadius: "3px",
+                cursor: "pointer",
+                fontSize: "12px",
+              }}
+            >
+              Log File Content to Console
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
