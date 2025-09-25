@@ -212,7 +212,7 @@ describe("fileUtils", () => {
       expect(mockFile3.getData).toHaveBeenCalled();
     });
 
-    it("should handle file extraction errors gracefully", async () => {
+    it("should throw error when file extraction fails", async () => {
       const mockEntries = [
         createMockFileEntry("file1.txt"),
         createMockFileEntry("file2.txt"),
@@ -233,16 +233,9 @@ describe("fileUtils", () => {
         .fn()
         .mockResolvedValue(mockEntries);
 
-      const result = await processZipFile(
-        mockBinaryData,
-        mockFileName,
-        mockGetZipEntries,
-      );
-
-      expect(result).toEqual({
-        "file1.txt": "Success content",
-        "file3.txt": "Another success",
-      });
+      await expect(
+        processZipFile(mockBinaryData, mockFileName, mockGetZipEntries),
+      ).rejects.toThrow("Failed to extract 1 file(s) from ZIP: file2.txt");
     });
   });
 });

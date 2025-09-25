@@ -159,6 +159,7 @@ export const processZipFile = async (
 ): Promise<SourceCodeResult> => {
   const entries = await getZipEntries(binaryData);
   const result: SourceCodeResult = {};
+  const failedFiles: string[] = [];
 
   const promises: Promise<void>[] = [];
 
@@ -177,7 +178,7 @@ export const processZipFile = async (
           const content = await entry.getData(uint8ArrayWriter);
           result[entry.filename] = new TextDecoder().decode(content);
         } catch (error) {
-          console.error(`Error extracting file ${entry.filename}:`, error);
+          failedFiles.push(entry.filename);
         }
       })();
 
@@ -186,5 +187,12 @@ export const processZipFile = async (
   }
 
   await Promise.all(promises);
+
+  if (failedFiles.length > 0) {
+    throw new Error(
+      `Failed to extract ${failedFiles.length} file(s) from ZIP: ${failedFiles.join(", ")}`,
+    );
+  }
+
   return result;
 };
