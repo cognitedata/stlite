@@ -2,10 +2,14 @@
 // is used by cognite-sdk. This ended up being quite a bit of work to fix, so we just
 // download the files directly using fetch instead.
 
-import type { Entry } from "@zip.js/zip.js";
-import { ZipReader, Uint8ArrayReader, Uint8ArrayWriter } from "@zip.js/zip.js";
 export interface SourceCodeResult {
   [filePath: string]: string;
+}
+
+export interface ZipEntry {
+  filename: string;
+  directory: boolean;
+  getData: () => Promise<Uint8Array>;
 }
 
 export interface FileContent {
@@ -138,14 +142,32 @@ export const isZipFile = (fileName: string, mimeType?: string): boolean => {
  */
 export const defaultGetZipEntries = async (
   binaryData: ArrayBuffer,
-): Promise<Entry[]> => {
+): Promise<ZipEntry[]> => {
+  const { ZipReader, Uint8ArrayReader, Uint8ArrayWriter } = await import(
+    "@zip.js/zip.js"
+  );
+
   const zipReader = new ZipReader(
     new Uint8ArrayReader(new Uint8Array(binaryData)),
   );
   const entries = await zipReader.getEntries();
+
+  // Convert zip.js Entry objects to our simpler ZipEntry interface
+  // We filter out directories since we don't need them
+  const zipEntries: ZipEntry[] = entries
+    .filter((entry) => !entry.directory)
+    .map((entry) => ({
+      filename: entry.filename,
+      directory: false,
+      getData: async () => {
+        const writer = new Uint8ArrayWriter();
+        return entry.getData(writer);
+      },
+    }));
+
   await zipReader.close();
 
-  return entries;
+  return zipEntries;
 };
 
 /**
@@ -154,7 +176,9 @@ export const defaultGetZipEntries = async (
 export const processZipFile = async (
   binaryData: ArrayBuffer,
   fileName: string,
-  getZipEntries: (data: ArrayBuffer) => Promise<Entry[]> = defaultGetZipEntries,
+  getZipEntries: (
+    data: ArrayBuffer,
+  ) => Promise<ZipEntry[]> = defaultGetZipEntries,
 ): Promise<SourceCodeResult> => {
   const entries = await getZipEntries(binaryData);
   const result: SourceCodeResult = {};
@@ -171,8 +195,7 @@ export const processZipFile = async (
       const promise = (async () => {
         try {
           // Extract as binary and convert to string for all files
-          const uint8ArrayWriter = new Uint8ArrayWriter();
-          const content = await entry.getData(uint8ArrayWriter);
+          const content = await entry.getData();
           result[entry.filename] = new TextDecoder().decode(content);
         } catch (error) {
           failedFiles.push(entry.filename);

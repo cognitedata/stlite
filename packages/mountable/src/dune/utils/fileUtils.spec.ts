@@ -5,19 +5,8 @@ import {
   type Credentials,
   processZipFile,
   defaultGetZipEntries,
+  type ZipEntry,
 } from "./fileUtils";
-
-import type { DirectoryEntry, FileEntry } from "@zip.js/zip.js";
-
-// Mock the entire @zip.js/zip.js module to avoid Node.js compatibility issues
-jest.mock("@zip.js/zip.js", () => ({
-  ZipReader: jest.fn().mockImplementation(() => ({
-    getEntries: jest.fn(),
-    close: jest.fn(),
-  })),
-  Uint8ArrayReader: jest.fn(),
-  Uint8ArrayWriter: jest.fn().mockImplementation(() => ({})),
-}));
 
 describe("fileUtils", () => {
   const mockFetch: typeof fetch = jest.fn();
@@ -146,23 +135,16 @@ describe("fileUtils", () => {
     const mockFileName = "test.zip";
 
     // Mock Entry type for testing
-    const createMockFileEntry = (filename: string) => {
-      const entry: Partial<FileEntry> = {
+    const createMockFileEntry = (
+      filename: string,
+      content: string,
+    ): ZipEntry => {
+      const encodedContent = new TextEncoder().encode(content);
+      return {
         filename,
         directory: false,
-        getData: jest.fn(),
+        getData: jest.fn().mockResolvedValue(encodedContent),
       };
-
-      return entry as FileEntry;
-    };
-
-    const createMockDirectoryEntry = (foldername: string) => {
-      const entry: Partial<DirectoryEntry> = {
-        filename: foldername,
-        directory: true,
-      };
-
-      return entry as DirectoryEntry;
     };
 
     afterEach(() => {
@@ -170,25 +152,17 @@ describe("fileUtils", () => {
     });
 
     it("should process zip file with multiple text files successfully", async () => {
-      const mockFile1 = createMockFileEntry("file1.txt");
-      const mockFile2 = createMockFileEntry("file2.py");
-      const mockDirectory = createMockDirectoryEntry("subdir/");
-      const mockFile3 = createMockFileEntry("subdir/file3.js");
-
-      const mockEntries = [mockFile1, mockFile2, mockDirectory, mockFile3];
-
-      // Mock getData to return Uint8Array for each file
-      const mockFile1Content = new TextEncoder().encode("Hello from file1");
-      const mockFile2Content = new TextEncoder().encode(
+      const mockFile1 = createMockFileEntry("file1.txt", "Hello from file1");
+      const mockFile2 = createMockFileEntry(
+        "file2.py",
         "print('Hello from file2')",
       );
-      const mockFile3Content = new TextEncoder().encode(
+      const mockFile3 = createMockFileEntry(
+        "subdir/file3.js",
         "console.log('Hello from file3')",
       );
 
-      jest.mocked(mockFile1.getData).mockResolvedValue(mockFile1Content);
-      jest.mocked(mockFile2.getData).mockResolvedValue(mockFile2Content);
-      jest.mocked(mockFile3.getData).mockResolvedValue(mockFile3Content);
+      const mockEntries = [mockFile1, mockFile2, mockFile3];
 
       const mockGetZipEntries: typeof defaultGetZipEntries = jest
         .fn()
@@ -213,21 +187,17 @@ describe("fileUtils", () => {
     });
 
     it("should throw error when file extraction fails", async () => {
-      const mockEntries = [
-        createMockFileEntry("file1.txt"),
-        createMockFileEntry("file2.txt"),
-        createMockFileEntry("file3.txt"),
-      ];
+      const mockFile1 = createMockFileEntry("file1.txt", "Success content");
+      const mockFile3 = createMockFileEntry("file3.txt", "Another success");
 
-      // Mock getData to succeed for first file, fail for second, succeed for third
-      const mockFile1Content = new TextEncoder().encode("Success content");
-      const mockFile3Content = new TextEncoder().encode("Another success");
+      // Create a file entry that will fail
+      const mockFile2: ZipEntry = {
+        filename: "file2.txt",
+        directory: false,
+        getData: jest.fn().mockRejectedValue(new Error("Extraction failed")),
+      };
 
-      jest.mocked(mockEntries[0].getData).mockResolvedValue(mockFile1Content);
-      jest
-        .mocked(mockEntries[1].getData)
-        .mockRejectedValue(new Error("Extraction failed"));
-      jest.mocked(mockEntries[2].getData).mockResolvedValue(mockFile3Content);
+      const mockEntries = [mockFile1, mockFile2, mockFile3];
 
       const mockGetZipEntries: typeof defaultGetZipEntries = jest
         .fn()
