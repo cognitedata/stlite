@@ -161,13 +161,18 @@ describe("useFetchFileContent", () => {
     jest.mocked(mockGetFileDownloadUrl).mockResolvedValue({
       downloadUrl: "https://download.example.test/file",
     });
+    const file1Buffer = new ArrayBuffer(5);
+    new Uint8Array(file1Buffer).set([102, 105, 108, 101, 49]); // "file1"
+    const file2Buffer = new ArrayBuffer(5);
+    new Uint8Array(file2Buffer).set([102, 105, 108, 101, 50]); // "file2"
+
     const stubResponse1: Partial<Response> = {
       ok: true,
-      arrayBuffer: () => Promise.resolve(Uint8Array.from("file1").buffer),
+      arrayBuffer: () => Promise.resolve(file1Buffer),
     };
     const stubResponse2: Partial<Response> = {
       ok: true,
-      arrayBuffer: () => Promise.resolve(Uint8Array.from("file2").buffer),
+      arrayBuffer: () => Promise.resolve(file2Buffer),
     };
     const { promise: fetchPromise1, resolve: fetchResolve1 } =
       createResolvablePromise<Response>();
@@ -208,7 +213,7 @@ describe("useFetchFileContent", () => {
       isLoading: false,
       error: null,
       fileContent: {
-        binaryData: Uint8Array.from("file2").buffer,
+        binaryData: file2Buffer,
         fileName: "test.py",
         mimeType: "text/plain",
         lastUpdated: new Date("2023-01-01T00:00:00Z"),
