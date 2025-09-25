@@ -10,7 +10,7 @@ import { processZipFile, type SourceCodeResult } from "./utils/fileUtils";
 export const AppWithCredentials: React.FC = () => {
   const { appId } = useParams<{ appId: string }>();
   const { credentials } = useCredentials();
-  const { shouldUpdateApp, isServiceWorkerAvailable } = useServiceWorker();
+  const { ensureAppIsReady, isServiceWorkerAvailable } = useServiceWorker();
   const [sourceCode, setSourceCode] = useState<SourceCodeResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingError, setProcessingError] = useState<Error | null>(null);
@@ -40,12 +40,13 @@ export const AppWithCredentials: React.FC = () => {
     }
   }, [fileContent]);
 
-  // Test service worker when all data is available
+  // Ensure app is ready in service worker when all data is available
   useEffect(() => {
     console.log("🔍 Service Worker Test Effect triggered:", {
       hasCredentials: !!credentials,
       hasAppId: !!appId,
       hasFileContent: !!fileContent,
+      hasSourceCode: !!sourceCode,
       isServiceWorkerAvailable: isServiceWorkerAvailable(),
       credentials: credentials
         ? {
@@ -62,10 +63,17 @@ export const AppWithCredentials: React.FC = () => {
             lastUpdated: fileContent.lastUpdated,
           }
         : null,
+      sourceCodeFiles: sourceCode ? Object.keys(sourceCode).length : 0,
     });
 
-    if (credentials && appId && fileContent && isServiceWorkerAvailable()) {
-      console.log("✅ All conditions met, calling shouldUpdateApp...");
+    if (
+      credentials &&
+      appId &&
+      fileContent &&
+      sourceCode &&
+      isServiceWorkerAvailable()
+    ) {
+      console.log("✅ All conditions met, calling ensureAppIsReady...");
 
       const payload = {
         cluster: credentials.baseUrl
@@ -76,13 +84,17 @@ export const AppWithCredentials: React.FC = () => {
         lastUpdatedTime: fileContent.lastUpdated
           ? fileContent.lastUpdated.getTime()
           : Date.now(),
+        files: sourceCode,
       };
 
-      console.log("📤 Calling shouldUpdateApp with payload:", payload);
+      console.log("📤 Calling ensureAppIsReady with payload:", {
+        ...payload,
+        files: `${Object.keys(sourceCode).length} files`,
+      });
 
-      shouldUpdateApp(payload)
+      ensureAppIsReady(payload)
         .then((response) => {
-          console.log("✅ shouldUpdateApp succeeded:", response);
+          console.log("✅ ensureAppIsReady succeeded:", response);
         })
         .catch((error) => {
           console.error("❌ Service Worker Error:", error);
@@ -92,6 +104,7 @@ export const AppWithCredentials: React.FC = () => {
         missingCredentials: !credentials,
         missingAppId: !appId,
         missingFileContent: !fileContent,
+        missingSourceCode: !sourceCode,
         serviceWorkerNotAvailable: !isServiceWorkerAvailable(),
       });
     }
@@ -99,7 +112,8 @@ export const AppWithCredentials: React.FC = () => {
     credentials,
     appId,
     fileContent,
-    shouldUpdateApp,
+    sourceCode,
+    ensureAppIsReady,
     isServiceWorkerAvailable,
   ]);
 
