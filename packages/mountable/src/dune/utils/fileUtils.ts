@@ -3,6 +3,7 @@
 // download the files directly using fetch instead.
 
 import type { Entry } from "@zip.js/zip.js";
+import { TextWriter, ZipReader, BlobReader } from "@zip.js/zip.js";
 export interface SourceCodeResult {
   [filePath: string]: string;
 }
@@ -138,9 +139,6 @@ export const isZipFile = (fileName: string, mimeType?: string): boolean => {
 export const defaultGetZipEntries = async (
   binaryData: ArrayBuffer,
 ): Promise<Entry[]> => {
-  // Lazy load the zip.js library to avoid Node.js import issues
-  const { ZipReader, BlobReader } = await import("@zip.js/zip.js");
-
   const blob = new Blob([binaryData]);
   const zipReader = new ZipReader(new BlobReader(blob));
   const entries = await zipReader.getEntries();
@@ -171,8 +169,7 @@ export const processZipFile = async (
     if (!entry.directory) {
       const promise = (async () => {
         try {
-          // Lazy load the zip.js library to avoid Node.js import issues
-          const { TextWriter } = await import("@zip.js/zip.js");
+          // Extract as text directly using TextWriter
           const textWriter = new TextWriter();
           const content = await entry.getData(textWriter);
           result[entry.filename] = content;
