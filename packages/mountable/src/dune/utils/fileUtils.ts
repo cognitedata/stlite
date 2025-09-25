@@ -171,12 +171,11 @@ export const processZipFile = async (
     if (!entry.directory) {
       const promise = (async () => {
         try {
-          // Extract as binary and convert to string for all files
           // Lazy load the zip.js library to avoid Node.js import issues
-          const { Uint8ArrayWriter } = await import("@zip.js/zip.js");
-          const uint8ArrayWriter = new Uint8ArrayWriter();
-          const content = await entry.getData(uint8ArrayWriter);
-          result[entry.filename] = new TextDecoder().decode(content);
+          const { TextWriter } = await import("@zip.js/zip.js");
+          const textWriter = new TextWriter();
+          const content = await entry.getData(textWriter);
+          result[entry.filename] = content;
         } catch (error) {
           failedFiles.push(entry.filename);
         }
