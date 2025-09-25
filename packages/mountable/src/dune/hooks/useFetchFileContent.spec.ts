@@ -32,7 +32,7 @@ describe("useFetchFileContent", () => {
       externalId: "test-file",
       name: "test.py",
       mimeType: "text/plain",
-      lastUpdatedTime: new Date("2023-01-01T00:00:00Z"),
+      lastUpdatedTime: 1672531200000,
     };
 
     const mockDownloadUrl = "https://download.example.test/file";
@@ -155,7 +155,7 @@ describe("useFetchFileContent", () => {
       externalId: "test-file",
       name: "test.py",
       mimeType: "text/plain",
-      lastUpdatedTime: new Date("2023-01-01T00:00:00Z"),
+      lastUpdatedTime: 1672531200000,
     };
     jest.mocked(mockRetrieveFileMetadata).mockResolvedValue(mockFile);
     jest.mocked(mockGetFileDownloadUrl).mockResolvedValue({

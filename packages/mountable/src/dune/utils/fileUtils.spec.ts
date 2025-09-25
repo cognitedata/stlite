@@ -51,8 +51,8 @@ describe("fileUtils", () => {
         externalId: "test-file",
         name: "test.py",
         mimeType: "text/plain",
-        lastUpdatedTime: new Date("2023-01-01T00:00:00Z"),
-        createdTime: new Date("2023-01-01T00:00:00Z"),
+        lastUpdatedTime: 1672531200000,
+        createdTime: 1672531200000,
       });
     });
 
