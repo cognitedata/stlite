@@ -143,7 +143,7 @@ describe("fileUtils", () => {
       return {
         filename,
         directory: false,
-        getData: jest.fn().mockResolvedValue(encodedContent),
+        getData: () => Promise.resolve(encodedContent),
       };
     };
 
