@@ -164,6 +164,9 @@ export const processZipFile = async (
 
   // Process each file in the zip
   for (const entry of entries) {
+    // We don't care about the actual directories in the zip files.
+    // Files inside the directories will have their paths in the file name
+    // so that is ok.
     if (!entry.directory) {
       const promise = (async () => {
         try {
