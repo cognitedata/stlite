@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 const evalSourceMapMiddleware = require('react-dev-utils/evalSourceMapMiddleware');
 const noopServiceWorkerMiddleware = require('react-dev-utils/noopServiceWorkerMiddleware');
 const ignoredFiles = require('react-dev-utils/ignoredFiles');
@@ -122,6 +123,17 @@ module.exports = function (proxy, allowedHost) {
       // it used the same host and port.
       // https://github.com/facebook/create-react-app/issues/2272#issuecomment-302832432
       // devServer.app.use(noopServiceWorkerMiddleware(paths.publicUrlOrPath)); // Commented out to enable SW in dev
+      
+      // Serve the built service worker in development mode
+      const swPath = path.join(paths.appBuild, 'service-worker.js');
+      if (fs.existsSync(swPath)) {
+        devServer.app.get('/service-worker.js', (req, res) => {
+          res.setHeader('Content-Type', 'application/javascript');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.sendFile(swPath);
+        });
+      }
+      
     },
   };
 };
