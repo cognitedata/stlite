@@ -4,6 +4,7 @@ import {
   type Credentials,
   retrieveFileMetadata,
   getFileDownloadUrl,
+  CogniteFile,
 } from "../utils/fileUtils";
 
 describe("useFetchFileContent", () => {
