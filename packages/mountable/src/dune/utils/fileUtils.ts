@@ -24,8 +24,8 @@ export interface CogniteFile {
   externalId: string;
   name: string;
   mimeType?: string;
-  lastUpdatedTime?: Date;
-  createdTime?: Date;
+  lastUpdatedTime?: number; // API returns milliseconds
+  createdTime?: number; // API returns milliseconds
 }
 
 export interface CogniteDownloadUrl {
