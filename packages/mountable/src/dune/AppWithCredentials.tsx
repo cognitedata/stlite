@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { useCredentials, useFetchFileContent } from "./hooks";
-import {
-  processZipFile,
-  type SourceCodeResult,
-} from "./utils/fileUtils";
+import { useCredentials, useFetchFileContent, useServiceWorker } from "./hooks";
+import { processZipFile, type SourceCodeResult } from "./utils/fileUtils";
 
 /**
  * Component for the /dune route - handles Fusion integration
@@ -13,6 +10,7 @@ import {
 export const AppWithCredentials: React.FC = () => {
   const { appId } = useParams<{ appId: string }>();
   const { credentials } = useCredentials();
+  const { ensureAppIsReady, isServiceWorkerAvailable } = useServiceWorker();
   const [sourceCode, setSourceCode] = useState<SourceCodeResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingError, setProcessingError] = useState<Error | null>(null);
@@ -22,10 +20,7 @@ export const AppWithCredentials: React.FC = () => {
     fileContent,
     isLoading: isFetching,
     error: fetchError,
-  } = useFetchFileContent(
-    appId,
-    credentials,
-  );
+  } = useFetchFileContent(appId, credentials);
 
   // Process ZIP file when fileContent is available
   useEffect(() => {
@@ -44,6 +39,83 @@ export const AppWithCredentials: React.FC = () => {
         });
     }
   }, [fileContent]);
+
+  // Ensure app is ready in service worker when all data is available
+  useEffect(() => {
+    console.log("🔍 Service Worker Test Effect triggered:", {
+      hasCredentials: !!credentials,
+      hasAppId: !!appId,
+      hasFileContent: !!fileContent,
+      hasSourceCode: !!sourceCode,
+      isServiceWorkerAvailable: isServiceWorkerAvailable(),
+      credentials: credentials
+        ? {
+            project: credentials.project,
+            baseUrl: credentials.baseUrl,
+            hasToken: !!credentials.token,
+          }
+        : null,
+      appId,
+      fileContent: fileContent
+        ? {
+            fileName: fileContent.fileName,
+            size: fileContent.binaryData.byteLength,
+            lastUpdated: fileContent.lastUpdated,
+          }
+        : null,
+      sourceCodeFiles: sourceCode ? Object.keys(sourceCode).length : 0,
+    });
+
+    if (
+      credentials &&
+      appId &&
+      fileContent &&
+      sourceCode &&
+      isServiceWorkerAvailable()
+    ) {
+      console.log("✅ All conditions met, calling ensureAppIsReady...");
+
+      const payload = {
+        cluster: credentials.baseUrl
+          .replace("https://", "")
+          .replace("http://", ""),
+        project: credentials.project,
+        appId: appId,
+        lastUpdatedTime: fileContent.lastUpdated
+          ? fileContent.lastUpdated.getTime()
+          : Date.now(),
+        files: sourceCode,
+      };
+
+      console.log("📤 Calling ensureAppIsReady with payload:", {
+        ...payload,
+        files: `${Object.keys(sourceCode).length} files`,
+      });
+
+      ensureAppIsReady(payload)
+        .then((response) => {
+          console.log("✅ ensureAppIsReady succeeded:", response);
+        })
+        .catch((error) => {
+          console.error("❌ Service Worker Error:", error);
+        });
+    } else {
+      console.log("⏳ Waiting for conditions:", {
+        missingCredentials: !credentials,
+        missingAppId: !appId,
+        missingFileContent: !fileContent,
+        missingSourceCode: !sourceCode,
+        serviceWorkerNotAvailable: !isServiceWorkerAvailable(),
+      });
+    }
+  }, [
+    credentials,
+    appId,
+    fileContent,
+    sourceCode,
+    ensureAppIsReady,
+    isServiceWorkerAvailable,
+  ]);
 
   // Show loading state while waiting for credentials from Fusion
   if (!credentials) {

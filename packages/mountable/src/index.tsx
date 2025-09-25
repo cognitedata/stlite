@@ -5,6 +5,20 @@ import { StreamlitLegacy } from "./StreamlitLegacy";
 import AppWithCredentials from "./dune/AppWithCredentials";
 import AppHostDevelopment from "./dune/AppHostDevelopment";
 
+// Step 1: Register service worker
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/service-worker.js")
+      .then((registration) => {
+        console.log("✅ SW registered:", registration);
+      })
+      .catch((error) => {
+        console.log("❌ SW registration failed:", error);
+      });
+  });
+}
+
 /**
  * Landing component with router
  * Routes to either AppHostDevelopment for development, AppWithCredentials for production apps, or StreamlitLegacy for root
