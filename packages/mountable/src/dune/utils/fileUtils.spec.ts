@@ -15,9 +15,8 @@ jest.mock("@zip.js/zip.js", () => ({
     getEntries: jest.fn(),
     close: jest.fn(),
   })),
-  BlobReader: jest.fn(),
+  Uint8ArrayReader: jest.fn(),
   Uint8ArrayWriter: jest.fn().mockImplementation(() => ({})),
-  TextWriter: jest.fn().mockImplementation(() => ({})),
 }));
 
 describe("fileUtils", () => {
@@ -178,10 +177,14 @@ describe("fileUtils", () => {
 
       const mockEntries = [mockFile1, mockFile2, mockDirectory, mockFile3];
 
-      // Mock getData to return strings directly
-      const mockFile1Content = "Hello from file1";
-      const mockFile2Content = "print('Hello from file2')";
-      const mockFile3Content = "console.log('Hello from file3')";
+      // Mock getData to return Uint8Array for each file
+      const mockFile1Content = new TextEncoder().encode("Hello from file1");
+      const mockFile2Content = new TextEncoder().encode(
+        "print('Hello from file2')",
+      );
+      const mockFile3Content = new TextEncoder().encode(
+        "console.log('Hello from file3')",
+      );
 
       jest.mocked(mockFile1.getData).mockResolvedValue(mockFile1Content);
       jest.mocked(mockFile2.getData).mockResolvedValue(mockFile2Content);
@@ -217,8 +220,8 @@ describe("fileUtils", () => {
       ];
 
       // Mock getData to succeed for first file, fail for second, succeed for third
-      const mockFile1Content = "Success content";
-      const mockFile3Content = "Another success";
+      const mockFile1Content = new TextEncoder().encode("Success content");
+      const mockFile3Content = new TextEncoder().encode("Another success");
 
       jest.mocked(mockEntries[0].getData).mockResolvedValue(mockFile1Content);
       jest

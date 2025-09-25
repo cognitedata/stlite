@@ -3,7 +3,7 @@
 // download the files directly using fetch instead.
 
 import type { Entry } from "@zip.js/zip.js";
-import { TextWriter, ZipReader, Uint8ArrayReader } from "@zip.js/zip.js";
+import { ZipReader, Uint8ArrayReader, Uint8ArrayWriter } from "@zip.js/zip.js";
 export interface SourceCodeResult {
   [filePath: string]: string;
 }
@@ -170,10 +170,10 @@ export const processZipFile = async (
     if (!entry.directory) {
       const promise = (async () => {
         try {
-          // Extract as text directly using TextWriter
-          const textWriter = new TextWriter();
-          const content = await entry.getData(textWriter);
-          result[entry.filename] = content;
+          // Extract as binary and convert to string for all files
+          const uint8ArrayWriter = new Uint8ArrayWriter();
+          const content = await entry.getData(uint8ArrayWriter);
+          result[entry.filename] = new TextDecoder().decode(content);
         } catch (error) {
           failedFiles.push(entry.filename);
         }
