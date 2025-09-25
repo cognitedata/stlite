@@ -2,6 +2,8 @@
 // is used by cognite-sdk. This ended up being quite a bit of work to fix, so we just
 // download the files directly using fetch instead.
 
+import { ZipReader, Uint8ArrayReader, Uint8ArrayWriter } from "@zip.js/zip.js";
+
 export interface SourceCodeResult {
   [filePath: string]: string;
 }
@@ -143,10 +145,6 @@ export const isZipFile = (fileName: string, mimeType?: string): boolean => {
 export const defaultGetZipEntries = async (
   binaryData: ArrayBuffer,
 ): Promise<ZipEntry[]> => {
-  const { ZipReader, Uint8ArrayReader, Uint8ArrayWriter } = await import(
-    "@zip.js/zip.js"
-  );
-
   const zipReader = new ZipReader(
     new Uint8ArrayReader(new Uint8Array(binaryData)),
   );
