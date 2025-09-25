@@ -1,8 +1,6 @@
 /* eslint-env serviceworker */
 /* eslint-disable no-restricted-globals */
 
-const SW_VERSION = "1.0.0"; // Bump to force update when changing SW
-
 // Service worker global scope - minimal interface for what we actually use
 // Using 'declare const self' with custom interface instead of official ServiceWorkerGlobalScope:
 // - Avoids TypeScript lib conflicts between DOM and WebWorker environments
@@ -18,14 +16,14 @@ declare const self: {
 
 // Install: prepare the worker and activate immediately
 self.addEventListener("install", (event: any) => {
-  console.log(`ServiceWorker v${SW_VERSION}: install`);
+  console.log("ServiceWorker: install");
   console.log(`Manifest entries:`, self.__WB_MANIFEST?.length || 0);
   self.skipWaiting();
 });
 
 // Activate: take control of existing clients immediately
 self.addEventListener("activate", (event: any) => {
-  console.log(`ServiceWorker v${SW_VERSION}: activate`);
+  console.log("ServiceWorker: activate");
   event.waitUntil(self.clients.claim());
 });
 
