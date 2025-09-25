@@ -4,6 +4,7 @@ import {
   type Credentials,
   retrieveFileMetadata,
   getFileDownloadUrl,
+  CogniteFile,
 } from "../utils/fileUtils";
 
 describe("useFetchFileContent", () => {
@@ -26,7 +27,7 @@ describe("useFetchFileContent", () => {
   });
 
   it("should fetch file content successfully", async () => {
-    const mockFile = {
+    const mockFile: CogniteFile = {
       id: 123,
       externalId: "test-file",
       name: "test.py",
@@ -146,4 +147,101 @@ describe("useFetchFileContent", () => {
     expect(jest.mocked(mockRetrieveFileMetadata)).not.toHaveBeenCalled();
     expect(jest.mocked(mockGetFileDownloadUrl)).not.toHaveBeenCalled();
   });
+
+  it("should ignore in-flight request if hook is rerendered", async () => {
+    // Arrange
+    const mockFile: CogniteFile = {
+      id: 123,
+      externalId: "test-file",
+      name: "test.py",
+      mimeType: "text/plain",
+      lastUpdatedTime: new Date("2023-01-01T00:00:00Z"),
+    };
+    jest.mocked(mockRetrieveFileMetadata).mockResolvedValue(mockFile);
+    jest.mocked(mockGetFileDownloadUrl).mockResolvedValue({
+      downloadUrl: "https://download.example.test/file",
+    });
+    const file1Buffer = new ArrayBuffer(5);
+    new Uint8Array(file1Buffer).set([102, 105, 108, 101, 49]); // "file1"
+    const file2Buffer = new ArrayBuffer(5);
+    new Uint8Array(file2Buffer).set([102, 105, 108, 101, 50]); // "file2"
+
+    const stubResponse1: Partial<Response> = {
+      ok: true,
+      arrayBuffer: () => Promise.resolve(file1Buffer),
+    };
+    const stubResponse2: Partial<Response> = {
+      ok: true,
+      arrayBuffer: () => Promise.resolve(file2Buffer),
+    };
+    const { promise: fetchPromise1, resolve: fetchResolve1 } =
+      createResolvablePromise<Response>();
+    const { promise: fetchPromise2, resolve: fetchResolve2 } =
+      createResolvablePromise<Response>();
+    jest
+      .mocked(mockFetch)
+      .mockImplementationOnce(() => fetchPromise1)
+      .mockImplementationOnce(() => fetchPromise2);
+
+    // Act
+    // First trigger the first fetch operation
+    const { result, rerender } = renderHook(
+      (props: { appId: string }) =>
+        useFetchFileContent(
+          props.appId,
+          mockCredentials,
+          mockRetrieveFileMetadata,
+          mockGetFileDownloadUrl,
+        ),
+      { initialProps: { appId: "file1" } },
+    );
+    expect(result.current.isLoading).toBe(true);
+    // Trigger the second fetch operation
+    rerender({ appId: "file2" });
+    expect(result.current.isLoading).toBe(true);
+
+    // Complete the requests, but in the wrong order (i.e. the first request is completed last)
+    fetchResolve2(stubResponse2 as Response);
+    fetchResolve1(stubResponse1 as Response);
+
+    await waitFor(() => {
+      expect(result.current.isLoading).toBe(false);
+    });
+
+    // Assert
+    expect(result.current).toEqual({
+      isLoading: false,
+      error: null,
+      fileContent: {
+        binaryData: file2Buffer,
+        fileName: "test.py",
+        mimeType: "text/plain",
+        lastUpdated: new Date("2023-01-01T00:00:00Z"),
+      },
+    });
+  });
 });
+
+/**
+ * Creates a promise that can be resolved or rejected "manually". Useful for testing
+ * where you want to control when primises are resolved/reject.
+ * @returns An object with a promise, a resolve function, and a reject function.
+ */
+function createResolvablePromise<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: unknown) => void;
+} {
+  let resolve: ((value: T) => void) | undefined;
+  let reject: ((reason?: unknown) => void) | undefined;
+  const promise = new Promise<T>((resolve_, reject_) => {
+    resolve = resolve_;
+    reject = reject_;
+  });
+  if (!resolve || !reject) {
+    // This can never happen - callback will be evaluated immediately
+    // by Promise constructor. Having this check makes Typescript happy
+    throw new Error("resolve or reject has not been assigned");
+  }
+  return { promise, resolve, reject };
+}
