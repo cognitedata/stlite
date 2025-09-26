@@ -2,7 +2,12 @@
 // is used by cognite-sdk. This ended up being quite a bit of work to fix, so we just
 // download the files directly using fetch instead.
 
-import { ZipReader, Uint8ArrayReader, Uint8ArrayWriter } from "@zip.js/zip.js";
+import {
+  ZipReader,
+  Uint8ArrayReader,
+  Uint8ArrayWriter,
+  FileEntry,
+} from "@zip.js/zip.js";
 
 export interface SourceCodeResult {
   [filePath: string]: string;
@@ -159,7 +164,10 @@ export const defaultGetZipEntries = async (
       directory: false,
       getData: async () => {
         const writer = new Uint8ArrayWriter();
-        return entry.getData(writer);
+        // This casting with as is correct
+        // because of .filter((entry) => !entry.directory)
+        // above. Somehow the build system doesn't pick it up.
+        return (entry as FileEntry).getData(writer);
       },
     }));
 
