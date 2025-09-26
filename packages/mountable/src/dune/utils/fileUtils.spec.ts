@@ -166,7 +166,8 @@ describe("fileUtils", () => {
 
       const mockGetZipEntries: typeof defaultGetZipEntries = jest
         .fn()
-        .mockResolvedValue(mockEntries);
+      const mockGetZipEntries: typeof defaultGetZipEntries = 
+        () => Promise.resolve(mockEntries);
       const result = await processZipFile(
         mockBinaryData,
         mockFileName,
