@@ -2,8 +2,21 @@
 // is used by cognite-sdk. This ended up being quite a bit of work to fix, so we just
 // download the files directly using fetch instead.
 
+import {
+  ZipReader,
+  Uint8ArrayReader,
+  Uint8ArrayWriter,
+  FileEntry,
+} from "@zip.js/zip.js";
+
 export interface SourceCodeResult {
   [filePath: string]: string;
+}
+
+export interface ZipEntry {
+  filename: string;
+  directory: boolean;
+  getData: () => Promise<Uint8Array>;
 }
 
 export interface FileContent {
@@ -118,4 +131,94 @@ export const getFileDownloadUrl = async (
   return {
     downloadUrl: data.items[0].downloadUrl,
   };
+};
+
+/**
+ * Check if a file is a ZIP file based on extension or MIME type
+ */
+export const isZipFile = (fileName: string, mimeType?: string): boolean => {
+  return (
+    fileName.toLowerCase().endsWith(".zip") ||
+    mimeType === "application/zip" ||
+    mimeType === "application/x-zip-compressed"
+  );
+};
+
+/**
+ * Default ZIP processor using @zip.js/zip.js
+ */
+export const defaultGetZipEntries = async (
+  binaryData: ArrayBuffer,
+): Promise<ZipEntry[]> => {
+  const zipReader = new ZipReader(
+    new Uint8ArrayReader(new Uint8Array(binaryData)),
+  );
+  const entries = await zipReader.getEntries();
+
+  // Convert zip.js Entry objects to our simpler ZipEntry interface
+  // We filter out directories since we don't need them
+  const zipEntries: ZipEntry[] = entries
+    .filter((entry) => !entry.directory)
+    .map((entry) => ({
+      filename: entry.filename,
+      directory: false,
+      getData: async () => {
+        const writer = new Uint8ArrayWriter();
+        // This casting with as is correct
+        // because of .filter((entry) => !entry.directory)
+        // above. Somehow the build system doesn't pick it up.
+        return (entry as FileEntry).getData(writer);
+      },
+    }));
+
+  await zipReader.close();
+
+  return zipEntries;
+};
+
+/**
+ * Process ZIP file content
+ */
+export const processZipFile = async (
+  binaryData: ArrayBuffer,
+  fileName: string,
+  getZipEntries: (
+    data: ArrayBuffer,
+  ) => Promise<ZipEntry[]> = defaultGetZipEntries,
+): Promise<SourceCodeResult> => {
+  const entries = await getZipEntries(binaryData);
+  const result: SourceCodeResult = {};
+  const failedFiles: string[] = [];
+
+  const promises: Promise<void>[] = [];
+
+  // Process each file in the zip
+  for (const entry of entries) {
+    // We don't care about the actual directories in the zip files.
+    // Files inside the directories will have their paths in the file name
+    // so that is ok.
+    if (!entry.directory) {
+      const promise = (async () => {
+        try {
+          // Extract as binary and convert to string for all files
+          const content = await entry.getData();
+          result[entry.filename] = new TextDecoder().decode(content);
+        } catch (error) {
+          failedFiles.push(entry.filename);
+        }
+      })();
+
+      promises.push(promise);
+    }
+  }
+
+  await Promise.all(promises);
+
+  if (failedFiles.length > 0) {
+    throw new Error(
+      `Failed to extract ${failedFiles.length} file(s) from ZIP: ${failedFiles.join(", ")}`,
+    );
+  }
+
+  return result;
 };
