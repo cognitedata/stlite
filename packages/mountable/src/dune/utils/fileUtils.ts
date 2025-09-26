@@ -6,13 +6,6 @@ export interface SourceCodeResult {
   [filePath: string]: string;
 }
 
-export interface FileContent {
-  binaryData: ArrayBuffer;
-  fileName: string;
-  mimeType?: string;
-  lastUpdated?: Date;
-}
-
 export interface Credentials {
   token: string;
   project: string;
@@ -86,10 +79,8 @@ export const retrieveFileMetadata = async (
     externalId: file.externalId,
     name: file.name,
     mimeType: file.mimeType,
-    lastUpdatedTime: file.lastUpdatedTime
-      ? new Date(file.lastUpdatedTime)
-      : undefined,
-    createdTime: file.createdTime ? new Date(file.createdTime) : undefined,
+    lastUpdatedTime: file.lastUpdatedTime ? file.lastUpdatedTime : undefined,
+    createdTime: file.createdTime ? file.createdTime : undefined,
   };
 };
 

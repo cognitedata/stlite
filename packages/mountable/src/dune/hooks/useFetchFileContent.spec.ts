@@ -75,7 +75,7 @@ describe("useFetchFileContent", () => {
       binaryData: mockFileContent,
       fileName: "test.py",
       mimeType: "text/plain",
-      lastUpdated: new Date("2023-01-01T00:00:00Z"),
+      lastUpdated: 1672531200000,
     });
     expect(result.current.error).toBeNull();
 
@@ -216,7 +216,7 @@ describe("useFetchFileContent", () => {
         binaryData: file2Buffer,
         fileName: "test.py",
         mimeType: "text/plain",
-        lastUpdated: new Date("2023-01-01T00:00:00Z"),
+        lastUpdated: 1672531200000,
       },
     });
   });
