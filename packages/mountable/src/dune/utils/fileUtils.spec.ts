@@ -2,6 +2,8 @@ import {
   retrieveFileMetadata,
   getFileDownloadUrl,
   type Credentials,
+  type CogniteFile,
+  type CogniteDownloadUrl,
 } from "./fileUtils";
 
 describe("fileUtils", () => {
@@ -22,23 +24,25 @@ describe("fileUtils", () => {
 
   describe("retrieveFileMetadata", () => {
     it("should retrieve file metadata successfully", async () => {
-      const mockResponse = {
+      const mockResponse: { items: CogniteFile[] } = {
         items: [
           {
             id: 123,
             externalId: "test-file",
             name: "test.py",
             mimeType: "text/plain",
-            lastUpdatedTime: "2023-01-01T00:00:00Z",
-            createdTime: "2023-01-01T00:00:00Z",
+            lastUpdatedTime: 1672531200000,
+            createdTime: 1672531200000,
           },
         ],
       };
 
-      jest.mocked(mockFetch).mockResolvedValueOnce({
+      const mockJson = jest.fn(() => Promise.resolve(mockResponse));
+      const mockedResponse: Partial<Response> = {
         ok: true,
-        json: jest.fn().mockResolvedValueOnce(mockResponse),
-      } as unknown as Response);
+        json: mockJson,
+      };
+      jest.mocked(mockFetch).mockResolvedValueOnce(mockedResponse as Response);
 
       const result = await retrieveFileMetadata("test-file", mockCredentials);
 
@@ -47,17 +51,18 @@ describe("fileUtils", () => {
         externalId: "test-file",
         name: "test.py",
         mimeType: "text/plain",
-        lastUpdatedTime: new Date("2023-01-01T00:00:00Z"),
-        createdTime: new Date("2023-01-01T00:00:00Z"),
+        lastUpdatedTime: 1672531200000,
+        createdTime: 1672531200000,
       });
     });
 
     it("should throw error when file not found", async () => {
-      jest.mocked(mockFetch).mockResolvedValueOnce({
+      const mockedResponse: Partial<Response> = {
         ok: false,
         status: 400,
         statusText: "Bad Request",
-      } as unknown as Response);
+      };
+      jest.mocked(mockFetch).mockResolvedValueOnce(mockedResponse as Response);
 
       await expect(
         retrieveFileMetadata("does-not-exist", mockCredentials),
@@ -67,14 +72,16 @@ describe("fileUtils", () => {
 
   describe("getFileDownloadUrl", () => {
     it("should get download URL successfully", async () => {
-      const mockResponse = {
+      const mockResponse: { items: CogniteDownloadUrl[] } = {
         items: [{ downloadUrl: "https://download.example.test/file" }],
       };
 
-      jest.mocked(mockFetch).mockResolvedValueOnce({
+      const mockJson = jest.fn(() => Promise.resolve(mockResponse));
+      const mockedResponse: Partial<Response> = {
         ok: true,
-        json: jest.fn().mockResolvedValueOnce(mockResponse),
-      } as unknown as Response);
+        json: mockJson,
+      };
+      jest.mocked(mockFetch).mockResolvedValueOnce(mockedResponse as Response);
 
       const result = await getFileDownloadUrl("test-file", mockCredentials);
 
@@ -84,11 +91,12 @@ describe("fileUtils", () => {
     });
 
     it("should throw error when file not found", async () => {
-      jest.mocked(mockFetch).mockResolvedValueOnce({
+      const mockedResponse: Partial<Response> = {
         ok: false,
         status: 400,
         statusText: "Bad Request",
-      } as unknown as Response);
+      };
+      jest.mocked(mockFetch).mockResolvedValueOnce(mockedResponse as Response);
 
       await expect(
         getFileDownloadUrl("does-not-exist", mockCredentials),
