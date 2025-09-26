@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useCredentials, useFetchFileContent } from "./hooks";
-import {
-  processZipFile,
-  type SourceCodeResult,
-} from "./utils/fileUtils";
+import { processZipFile, type SourceCodeResult } from "./utils/fileUtils";
 
 /**
  * Component for the /dune route - handles Fusion integration
@@ -22,27 +19,33 @@ export const AppWithCredentials: React.FC = () => {
     fileContent,
     isLoading: isFetching,
     error: fetchError,
-  } = useFetchFileContent(
-    appId,
-    credentials,
-  );
+  } = useFetchFileContent(appId, credentials);
 
   // Process ZIP file when fileContent is available
   useEffect(() => {
+    let isActive = true;
     if (fileContent) {
       setIsProcessing(true);
       setProcessingError(null);
 
       processZipFile(fileContent.binaryData, fileContent.fileName)
         .then((result) => {
-          setSourceCode(result);
+          if (isActive) {
+            setSourceCode(result);
+          }
           setIsProcessing(false);
         })
         .catch((error) => {
-          setProcessingError(error);
+          if (isActive) {
+            setProcessingError(error);
+          }
           setIsProcessing(false);
         });
     }
+
+    return () => {
+      isActive = false;
+    };
   }, [fileContent]);
 
   // Show loading state while waiting for credentials from Fusion
