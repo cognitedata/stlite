@@ -64,7 +64,7 @@ describe("fileUtils", () => {
       } as unknown as Response);
 
       await expect(
-        retrieveFileMetadata("does-not-exist", mockCredentials),
+        retrieveFileMetadata("does-not-exist", mockCredentials)
       ).rejects.toThrow("API request failed: 400 Bad Request");
     });
   });
@@ -95,7 +95,7 @@ describe("fileUtils", () => {
       } as unknown as Response);
 
       await expect(
-        getFileDownloadUrl("does-not-exist", mockCredentials),
+        getFileDownloadUrl("does-not-exist", mockCredentials)
       ).rejects.toThrow("API request failed: 400 Bad Request");
     });
   });
@@ -137,7 +137,7 @@ describe("fileUtils", () => {
     // Mock Entry type for testing
     const createMockFileEntry = (
       filename: string,
-      content: string,
+      content: string
     ): ZipEntry => {
       const encodedContent = new TextEncoder().encode(content);
       return {
@@ -155,23 +155,21 @@ describe("fileUtils", () => {
       const mockFile1 = createMockFileEntry("file1.txt", "Hello from file1");
       const mockFile2 = createMockFileEntry(
         "file2.py",
-        "print('Hello from file2')",
+        "print('Hello from file2')"
       );
       const mockFile3 = createMockFileEntry(
         "subdir/file3.js",
-        "console.log('Hello from file3')",
+        "console.log('Hello from file3')"
       );
 
       const mockEntries = [mockFile1, mockFile2, mockFile3];
 
-      const mockGetZipEntries: typeof defaultGetZipEntries = jest
-        .fn()
-      const mockGetZipEntries: typeof defaultGetZipEntries = 
-        () => Promise.resolve(mockEntries);
+      const mockGetZipEntries: typeof defaultGetZipEntries = () =>
+        Promise.resolve(mockEntries);
       const result = await processZipFile(
         mockBinaryData,
         mockFileName,
-        mockGetZipEntries,
+        mockGetZipEntries
       );
 
       expect(mockGetZipEntries).toHaveBeenCalledWith(mockBinaryData);
@@ -200,13 +198,11 @@ describe("fileUtils", () => {
 
       const mockEntries = [mockFile1, mockFile2, mockFile3];
 
-      const mockGetZipEntries: typeof defaultGetZipEntries = jest
-        .fn()
-        () => Promise.resolve(mockEntries);
-
+      const mockGetZipEntries: typeof defaultGetZipEntries = () =>
+        Promise.resolve(mockEntries);
 
       await expect(
-        processZipFile(mockBinaryData, mockFileName, mockGetZipEntries),
+        processZipFile(mockBinaryData, mockFileName, mockGetZipEntries)
       ).rejects.toThrow("Failed to extract 1 file(s) from ZIP: file2.txt");
     });
   });
