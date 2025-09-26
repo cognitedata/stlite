@@ -89,10 +89,10 @@ jobs:
         run: make init
 
       ## Build and deploy @stlite/mountable
-      # PUBLIC_URL here is set as a relative path, which is possible to the trick introduced at https://github.com/whitphx/stlite/pull/143.
+      # PUBLIC_URL here is set as an absolute path to fix asset loading issues with nested routes (e.g. Dune apps)
       - if: matrix.target == 'mountable'
         name: Set PUBLIC_URL
-        run: echo "PUBLIC_URL=." >> $GITHUB_ENV
+        run: echo "PUBLIC_URL=/" >> $GITHUB_ENV
 
       - if: matrix.target == 'mountable'
         name: Build @stlite/mountable
